@@ -1,0 +1,2699 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Free flashcards with Flashcards, Learn, Test and Match modes.">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Three by Five</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@500;700&family=Atkinson+Hyperlegible+Next:wght@400;500;700&family=Shantell+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a study desk. Each set is a 3x5 index card lying on the desk; every study mode lifts one card to the center. */
+:root {
+  --desk: #e7ebf2;
+  --paper: #ffffff;
+  --panel: #f5f7fb;
+  --ink: #1a2133;
+  --ink-2: #535d75;
+  --ink-3: #7b849b;
+  --pen: #2944c2;
+  --pen-strong: #1c3297;
+  --pen-ink: #ffffff;
+  --pen-wash: #e3e9fb;
+  --pen-soft: #a3b3ec;
+  --rule: #d5e0f2;
+  --margin: #de6767;
+  --hi: #ffd84a;
+  --hi-edge: #b98a00;
+  --hi-ink: #3d2f00;
+  --hi-wash: #fff6c9;
+  --good: #1a8452;
+  --good-wash: #dcf2e5;
+  --bad: #c1334a;
+  --bad-ink: #ffffff;
+  --bad-wash: #fbe3e7;
+  --line: #d3d9e4;
+  --scrim: rgba(17, 23, 37, .45);
+  --shadow: 0 1px 2px rgba(26, 33, 51, .06), 0 6px 18px rgba(26, 33, 51, .08);
+  --shadow-lift: 0 2px 4px rgba(26, 33, 51, .08), 0 16px 34px rgba(26, 33, 51, .13);
+
+  --font-hand: "Shantell Sans", "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", system-ui, sans-serif;
+  --font-ui: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --fs-xs: .75rem; --fs-sm: .875rem; --fs-base: 1rem; --fs-md: 1.125rem; --fs-lg: 1.375rem; --fs-xl: 1.875rem; --fs-2xl: 2.375rem;
+  --r: 12px; --r-sm: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #0f131b; --paper: #1a2030; --panel: #151b27; --ink: #e7ebf4; --ink-2: #a6afc4; --ink-3: #7c869d;
+    --pen: #8fa6ff; --pen-strong: #b2c2ff; --pen-ink: #0d1326; --pen-wash: #222c4b; --pen-soft: #4b5c9f;
+    --rule: #262f45; --margin: #b85b5b; --hi: #f2cd3c; --hi-edge: #f2cd3c; --hi-ink: #2b2100; --hi-wash: #352f17;
+    --good: #55c690; --good-wash: #15302a; --bad: #ff7589; --bad-ink: #1d0a10; --bad-wash: #3b1c25;
+    --line: #2b3549; --scrim: rgba(0, 0, 0, .6);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 6px 18px rgba(0, 0, 0, .32);
+    --shadow-lift: 0 2px 4px rgba(0, 0, 0, .4), 0 16px 34px rgba(0, 0, 0, .45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #0f131b; --paper: #1a2030; --panel: #151b27; --ink: #e7ebf4; --ink-2: #a6afc4; --ink-3: #7c869d;
+  --pen: #8fa6ff; --pen-strong: #b2c2ff; --pen-ink: #0d1326; --pen-wash: #222c4b; --pen-soft: #4b5c9f;
+  --rule: #262f45; --margin: #b85b5b; --hi: #f2cd3c; --hi-edge: #f2cd3c; --hi-ink: #2b2100; --hi-wash: #352f17;
+  --good: #55c690; --good-wash: #15302a; --bad: #ff7589; --bad-ink: #1d0a10; --bad-wash: #3b1c25;
+  --line: #2b3549; --scrim: rgba(0, 0, 0, .6);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 6px 18px rgba(0, 0, 0, .32);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, .4), 0 16px 34px rgba(0, 0, 0, .45);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { background: var(--desk); color: var(--ink); font-family: var(--font-ui); font-size: var(--fs-base); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p, figure { margin: 0; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--pen); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.hand { font-family: var(--font-hand); }
+.mono { font-family: var(--font-mono); font-size: var(--fs-sm); }
+.muted { color: var(--ink-2); }
+.small { font-size: var(--fs-sm); }
+.icon { flex: none; display: block; }
+.icon.filled { fill: currentColor; }
+.is-star .icon, .icon.star-on { fill: var(--hi); stroke: var(--hi-edge); }
+.h2 { font-family: var(--font-hand); font-weight: 600; font-size: var(--fs-lg); line-height: 1.2; }
+.h3 { font-weight: 700; font-size: var(--fs-md); line-height: 1.3; }
+.eyebrow { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+
+/* shell + top bar */
+.shell { width: 100%; max-width: 1040px; margin-inline: auto; padding-inline: 24px; }
+main.shell { padding-block: 26px 80px; }
+@media (max-width: 560px) { .shell { padding-inline: 16px; } main.shell { padding-block: 18px 72px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--desk); border-bottom: 1px solid var(--line); }
+.topbar-in { display: flex; align-items: center; gap: 10px; min-height: 60px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; padding: 6px 4px; margin-left: -4px; border: 0; background: none; border-radius: 8px; font-family: var(--font-hand); font-weight: 700; font-size: 1.25rem; letter-spacing: -.01em; color: var(--ink); }
+.brand-mark { width: 34px; height: 26px; flex: none; }
+.bm-back { fill: var(--pen-soft); }
+.bm-front { fill: var(--paper); stroke: var(--ink); stroke-width: 1.4; }
+.bm-red { stroke: var(--margin); stroke-width: 1.6; }
+.bm-blue { stroke: var(--pen-soft); stroke-width: 1.1; }
+.spacer { flex: 1; }
+.sync { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); font-size: var(--fs-sm); font-weight: 500; white-space: nowrap; }
+.sync[data-state="saving"] .icon, .sync[data-state="loading"] .icon { animation: breathe 1.2s ease-in-out infinite; }
+.sync[data-state="synced"] .icon { color: var(--good); }
+.sync[data-state="error"] { color: var(--bad); border-color: var(--bad); }
+@keyframes breathe { 50% { opacity: .35; } }
+@media (max-width: 600px) { .sync-text { display: none; } .sync { width: 34px; padding: 0; justify-content: center; } }
+@media (max-width: 400px) { .hide-xs { display: none; } .btn-new { width: 42px; padding: 0; } }
+
+/* buttons + fields */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 0 16px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-weight: 700; font-size: .9375rem; line-height: 1.2; text-align: center; transition: background-color .15s, border-color .15s, color .15s, transform .1s; }
+.btn:hover { border-color: var(--ink-3); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn-primary { background: var(--pen); border-color: var(--pen); color: var(--pen-ink); }
+.btn-primary:hover { background: var(--pen-strong); border-color: var(--pen-strong); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+.btn-ghost:hover { background: var(--pen-wash); border-color: transparent; color: var(--ink); }
+.btn-danger { background: var(--bad); border-color: var(--bad); color: var(--bad-ink); }
+.btn-danger:hover { border-color: var(--bad); filter: brightness(1.05); }
+.danger-text { color: var(--bad); }
+.danger-text:hover { background: var(--bad-wash); color: var(--bad); }
+.btn-sm { min-height: 36px; padding: 0 12px; font-size: var(--fs-sm); }
+.btn-icon { width: 40px; padding: 0; }
+.link-btn { border: 0; background: none; color: var(--pen); font-weight: 700; padding: 6px 8px; border-radius: 6px; text-decoration: underline; text-underline-offset: 3px; }
+.field { display: block; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--paper); color: var(--ink); line-height: 1.4; transition: border-color .15s, box-shadow .15s; }
+.field:focus { outline: none; border-color: var(--pen); box-shadow: 0 0 0 3px var(--pen-wash); }
+.field::placeholder { color: var(--ink-3); }
+textarea.field { resize: vertical; min-height: 44px; }
+.field-sm { width: 90px; padding: 6px 10px; }
+.label { display: block; font-size: var(--fs-sm); font-weight: 700; color: var(--ink-2); margin-bottom: 6px; }
+.field-err, .form-err { color: var(--bad); font-size: var(--fs-sm); font-weight: 700; }
+.form-err:empty { display: none; }
+
+/* segmented control, switches, checks */
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); max-width: 100%; }
+.seg button { border: 0; background: transparent; padding: 6px 12px; min-height: 32px; border-radius: 7px; font-weight: 700; font-size: var(--fs-sm); color: var(--ink-2); }
+.seg button:hover:not(:disabled) { color: var(--ink); }
+.seg button[aria-pressed="true"], .seg button[aria-current="page"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow); }
+.seg button:disabled { opacity: .45; cursor: not-allowed; }
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 0; cursor: pointer; }
+.switch.is-disabled { opacity: .55; cursor: not-allowed; }
+.sw-text { display: grid; }
+.sw-text small { color: var(--ink-3); font-size: var(--fs-sm); }
+.switch input { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 42px; height: 24px; margin: 0; border-radius: 999px; background: var(--line); cursor: inherit; transition: background-color .15s; }
+.switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--paper); box-shadow: 0 1px 2px rgba(0, 0, 0, .3); transition: transform .15s; }
+.switch input:checked { background: var(--pen); }
+.switch input:checked::after { transform: translateX(18px); }
+.check { display: inline-flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; font-weight: 500; }
+.check input { width: 18px; height: 18px; margin: 0; accent-color: var(--pen); }
+.checks { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+
+/* meters + chips */
+.meter { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--line); }
+.meter span { display: block; height: 100%; transition: width .4s ease; }
+.m-mastered { background: var(--pen); }
+.m-learning { background: var(--pen-soft); }
+.m-hi { background: var(--hi); }
+.chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: var(--hi); color: var(--hi-ink); font-size: var(--fs-xs); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; flex: none; }
+.pill { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: var(--fs-xs); font-weight: 700; flex: none; }
+.pill-good { background: var(--good-wash); color: var(--good); }
+.pill-learn { background: var(--pen-wash); color: var(--pen); }
+.banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; padding: 14px 16px; margin-bottom: 22px; border-radius: var(--r); background: var(--hi-wash); border: 1px solid var(--hi-edge); }
+.banner p { flex: 1 1 280px; }
+.banner-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.mi { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--pen-wash); color: var(--pen); flex: none; }
+
+/* index card paper */
+.ruled { background-image: repeating-linear-gradient(to bottom, transparent 0 25px, var(--rule) 25px 26px); }
+
+/* home */
+.home-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 22px; }
+.page-title { font-family: var(--font-hand); font-weight: 700; font-size: var(--fs-xl); line-height: 1.15; text-wrap: balance; }
+.page-title .count { margin-left: 10px; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 500; color: var(--ink-3); }
+.home-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.search { position: relative; }
+.search .icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; }
+.search .field { width: 230px; height: 40px; padding-left: 36px; }
+@media (max-width: 560px) { .home-tools, .search, .search .field { width: 100%; } }
+.set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 22px; }
+.tile { position: relative; display: flex; flex-direction: column; min-height: 184px; padding: 0; text-align: left; border: 0; border-radius: 6px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow); overflow: hidden; transition: transform .18s ease, box-shadow .18s ease; }
+.tile:hover { transform: translateY(-3px) rotate(-.5deg); box-shadow: var(--shadow-lift); }
+.tile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 14px 16px 8px; border-bottom: 2px solid var(--margin); }
+.tile-title { font-family: var(--font-hand); font-weight: 600; font-size: 1.15rem; line-height: 1.25; overflow-wrap: anywhere; text-wrap: balance; }
+.tile-body { flex: 1; padding: 4px 16px 0; line-height: 26px; }
+.tile-count { font-weight: 700; }
+.tile-meta { display: flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: var(--fs-sm); }
+.tile-foot { display: flex; align-items: center; gap: 10px; padding: 10px 16px 14px; background: var(--paper); }
+.tile-foot .meter { flex: 1; height: 6px; }
+.tile-pct { font-size: var(--fs-xs); font-weight: 700; color: var(--ink-3); white-space: nowrap; }
+.tile-new { align-items: center; justify-content: center; gap: 8px; border: 2px dashed var(--line); background: transparent; box-shadow: none; color: var(--ink-2); font-weight: 700; }
+.tile-new:hover { transform: none; box-shadow: none; border-color: var(--pen); color: var(--pen); }
+.tile.skel { pointer-events: none; }
+.skel .bar { display: block; height: 12px; border-radius: 6px; background: var(--line); animation: breathe 1.4s ease-in-out infinite; }
+.loading-note { margin-top: 14px; }
+.no-match { padding: 24px 0; }
+.home-foot { margin-top: 28px; text-align: center; }
+.empty { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 36px; align-items: center; padding: 32px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); }
+.empty h2 { font-family: var(--font-hand); font-weight: 700; font-size: var(--fs-xl); line-height: 1.15; margin-bottom: 10px; text-wrap: balance; }
+.empty p { color: var(--ink-2); max-width: 48ch; }
+.empty-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 24px; }
+.mode-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.mode-list li { display: flex; align-items: center; gap: 10px; color: var(--ink-2); font-size: var(--fs-sm); }
+.mode-list b { color: var(--ink); }
+.mode-list .mi { width: 30px; height: 30px; border-radius: 8px; }
+.empty-example { display: grid; gap: 12px; justify-items: center; text-align: center; }
+.empty-example .tile { width: min(300px, 100%); transform: rotate(2deg); }
+.empty-example .tile:hover { transform: rotate(0deg) translateY(-3px); }
+@media (max-width: 760px) { .empty { grid-template-columns: minmax(0, 1fr); gap: 28px; padding: 22px; } }
+</style>
+<style>
+/* set page */
+.crumb { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 6px 8px 6px 2px; margin-bottom: 10px; border: 0; background: none; border-radius: 6px; color: var(--ink-2); font-weight: 700; font-size: var(--fs-sm); text-align: left; }
+.crumb:hover { color: var(--pen); }
+.crumb span { overflow-wrap: anywhere; }
+.set-title { font-family: var(--font-hand); font-weight: 700; font-size: var(--fs-2xl); line-height: 1.1; text-wrap: balance; overflow-wrap: anywhere; }
+.set-desc { color: var(--ink-2); max-width: 65ch; margin-top: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.set-meta { color: var(--ink-3); font-size: var(--fs-sm); margin-top: 8px; }
+.modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 24px 0; }
+@media (max-width: 800px) { .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.mode { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 12px; row-gap: 2px; align-items: center; padding: 14px; text-align: left; border: 1px solid var(--line); border-radius: var(--r); background: var(--paper); color: var(--ink); transition: border-color .15s, transform .15s, box-shadow .15s; }
+.mode .mi { grid-row: span 2; }
+.mode b { font-size: var(--fs-md); line-height: 1.2; }
+.mode small { color: var(--ink-2); font-size: var(--fs-sm); line-height: 1.3; }
+.mode:hover { border-color: var(--pen); transform: translateY(-2px); box-shadow: var(--shadow); }
+@media (max-width: 420px) { .mode { grid-template-columns: minmax(0, 1fr); row-gap: 8px; } .mode .mi { grid-row: auto; } .mode small { display: none; } }
+.progress-panel { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 18px 28px; align-items: center; padding: 18px 20px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); }
+@media (max-width: 640px) { .progress-panel { grid-template-columns: minmax(0, 1fr); } }
+.pp-head { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.pp-pct { font-weight: 700; font-size: var(--fs-sm); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: var(--fs-sm); color: var(--ink-2); }
+.legend i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 3px; vertical-align: -1px; }
+.lg-mastered { background: var(--pen); } .lg-learning { background: var(--pen-soft); } .lg-new { background: var(--line); }
+.stats { display: flex; gap: 28px; }
+.stat b { display: block; font-family: var(--font-mono); font-size: var(--fs-lg); font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat b.none { font-family: var(--font-ui); font-size: var(--fs-base); color: var(--ink-3); padding-block: 4px; }
+.stat span { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 22px; }
+.terms-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 28px 0 12px; }
+.terms { list-style: none; margin: 0; padding: 0; border-radius: var(--r); background: var(--paper); box-shadow: var(--shadow); overflow: hidden; }
+.term-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto; gap: 16px; align-items: start; padding: 12px 12px 12px 18px; border-bottom: 1px solid var(--rule); }
+.term-row:last-child { border-bottom: 0; }
+.term-row .t { font-family: var(--font-hand); font-weight: 600; font-size: var(--fs-md); line-height: 1.35; padding-top: 4px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.term-row .d { padding-top: 5px; overflow-wrap: anywhere; white-space: pre-wrap; }
+@media (max-width: 600px) { .term-row { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; } .term-row .d { grid-column: 1; grid-row: 2; padding-top: 0; color: var(--ink-2); } .term-row .star-btn { grid-column: 2; grid-row: 1 / span 2; } }
+.star-btn { width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--ink-3); flex: none; }
+.star-btn:hover { background: var(--pen-wash); color: var(--ink); }
+.star-btn[aria-pressed="true"] .icon { fill: var(--hi); stroke: var(--hi-edge); }
+.tool-panel { display: grid; gap: 14px; padding: 18px; margin-bottom: 18px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); }
+.panel-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.panel-status { font-size: var(--fs-sm); color: var(--ink-2); }
+.panel-status:empty { display: none; }
+.panel-status.err { color: var(--bad); font-weight: 700; }
+
+/* editor */
+.editor { display: grid; gap: 18px; }
+.editor-top { display: grid; gap: 6px; padding: 20px; border-radius: var(--r); background: var(--paper); box-shadow: var(--shadow); }
+.editor-top .label:not(:first-child) { margin-top: 10px; }
+.title-input { font-family: var(--font-hand); font-weight: 600; font-size: var(--fs-lg); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.sep-grid { display: grid; gap: 12px; }
+.sep-row .label { margin-bottom: 6px; }
+.sep-ctrl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pv-wrap { overflow-x: auto; }
+.pv { width: 100%; border-collapse: collapse; table-layout: fixed; background: var(--paper); border-radius: var(--r-sm); font-size: var(--fs-sm); }
+.pv td { padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; overflow-wrap: anywhere; }
+.pv td:first-child { width: 36%; font-weight: 600; }
+.rows-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.row { display: grid; grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1.4fr) 40px; grid-template-areas: "num term def del" ". err err ."; gap: 4px 14px; align-items: start; padding: 14px; border-radius: var(--r); background: var(--paper); box-shadow: var(--shadow); }
+.row-num { grid-area: num; padding-top: 10px; text-align: right; font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--ink-3); }
+.row-ft { grid-area: term; } .row-fd { grid-area: def; } .row-del { grid-area: del; } .row-err { grid-area: err; }
+.row .field { font-family: var(--font-hand); font-size: var(--fs-md); resize: none; overflow: hidden; min-height: 46px; }
+.row-label { display: block; margin-top: 4px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.row.has-err { box-shadow: 0 0 0 2px var(--bad); }
+.row-err { color: var(--bad); font-size: var(--fs-sm); font-weight: 700; }
+@media (max-width: 640px) { .row { grid-template-columns: minmax(0, 1fr) 40px; grid-template-areas: "num del" "term term" "def def" "err err"; gap: 8px; } .row-num { text-align: left; padding-top: 8px; } }
+.add-card { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 56px; border: 2px dashed var(--line); border-radius: var(--r); background: transparent; color: var(--ink-2); font-weight: 700; }
+.add-card:hover { border-color: var(--pen); color: var(--pen); }
+.savebar { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px 16px; margin-top: 4px; padding: 14px 0 calc(14px + env(safe-area-inset-bottom, 0px)); background: var(--desk); border-top: 1px solid var(--line); }
+.savebar .form-err { flex: 1 1 200px; }
+.savebar-btns { display: flex; gap: 8px; }
+
+/* study layout */
+.study { max-width: 780px; margin: 0 auto; }
+.study-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 20px; }
+.study-head .crumb { margin-bottom: 0; }
+@media (max-width: 600px) { .mode-tabs { width: 100%; } .mode-tabs button { flex: 1; } }
+.study-title { font-family: var(--font-hand); font-weight: 700; font-size: var(--fs-xl); line-height: 1.15; }
+.paper-panel { padding: 24px; border-radius: var(--r); background: var(--paper); box-shadow: var(--shadow); }
+.opts { display: grid; gap: 6px; padding: 14px 18px; margin-bottom: 18px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); }
+.opt-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 6px 0; }
+.opt-label { font-weight: 500; }
+.thin { height: 4px; border-radius: 999px; background: var(--line); overflow: hidden; margin-bottom: 18px; }
+.thin span { display: block; height: 100%; background: var(--pen); transition: width .3s ease; }
+.note { margin-bottom: 12px; font-size: var(--fs-sm); color: var(--ink-2); }
+.kbd-hint { margin-top: 14px; text-align: center; font-size: var(--fs-sm); color: var(--ink-3); }
+kbd { display: inline-block; min-width: 24px; padding: 1px 6px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--paper); font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-2); text-align: center; }
+@media (hover: none) { .kbd-hint { display: none; } }
+.results { display: grid; justify-items: center; gap: 14px; padding: 32px 24px; text-align: center; border-radius: var(--r); background: var(--paper); box-shadow: var(--shadow); }
+.res-title { font-family: var(--font-hand); font-weight: 700; font-size: var(--fs-xl); line-height: 1.2; text-wrap: balance; }
+.res-meter { width: min(420px, 100%); }
+.res-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 6px; }
+.done-mark { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--good-wash); color: var(--good); }
+
+/* flashcards */
+.flash-wrap { position: relative; perspective: 1600px; }
+.flash { position: relative; width: 100%; aspect-ratio: 5 / 3; min-height: 300px; cursor: pointer; outline: none; touch-action: pan-y; -webkit-user-select: none; user-select: none; transition: transform .2s ease; }
+.flash.dragging { transition: none; }
+.flash:focus-visible .face { box-shadow: 0 0 0 3px var(--pen), var(--shadow-lift); }
+.flash-inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .5s cubic-bezier(.2, .75, .25, 1); }
+.flash.flipped .flash-inner { transform: rotateX(180deg); }
+.face { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 8px; background: var(--paper); box-shadow: var(--shadow-lift); -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.face.back { transform: rotateX(180deg); }
+.flash[data-swipe="right"] .face { box-shadow: 0 0 0 3px var(--good), var(--shadow-lift); }
+.flash[data-swipe="left"] .face { box-shadow: 0 0 0 3px var(--hi-edge), var(--shadow-lift); }
+.face-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 50px; padding: 10px 18px 8px; border-bottom: 2px solid var(--margin); }
+.face-body { flex: 1; display: grid; place-items: center; min-height: 0; padding: 18px 28px 28px; overflow: auto; }
+.face-text { max-width: 100%; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font-hand); }
+.t-xl { font-size: clamp(1.9rem, 5.5vw, 2.9rem); font-weight: 600; line-height: 1.2; }
+.t-lg { font-size: clamp(1.5rem, 4vw, 2.1rem); font-weight: 500; line-height: 1.3; }
+.t-md { font-size: clamp(1.2rem, 3vw, 1.55rem); line-height: 1.4; }
+.t-sm { font-size: clamp(1.05rem, 2.4vw, 1.25rem); line-height: 1.5; }
+.t-xs { font-size: 1rem; line-height: 1.55; }
+.card-tools { position: absolute; top: 7px; right: 10px; z-index: 3; display: flex; gap: 2px; transition: opacity .15s; }
+.flash-wrap.dragging .card-tools { opacity: 0; }
+.card-tools .star-btn { width: 36px; height: 36px; }
+.enter-right, .enter-next { animation: inRight .26s ease-out; }
+.enter-left, .enter-prev { animation: inLeft .26s ease-out; }
+.enter-fade { animation: inFade .2s ease-out; }
+@keyframes inRight { from { opacity: 0; transform: translateX(34px) rotate(1deg); } }
+@keyframes inLeft { from { opacity: 0; transform: translateX(-34px) rotate(-1deg); } }
+@keyframes inFade { from { opacity: 0; transform: translateY(8px); } }
+.fc-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; margin-top: 18px; }
+.fc-controls > :first-child { justify-self: start; }
+.fc-controls > :last-child { justify-self: end; }
+.counter { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-2); white-space: nowrap; }
+.btn-learning { border-color: var(--hi-edge); }
+.btn-learning:hover { background: var(--hi-wash); border-color: var(--hi-edge); }
+.btn-know { border-color: var(--good); color: var(--good); }
+.btn-know:hover { background: var(--good-wash); border-color: var(--good); }
+.count { display: inline-grid; place-items: center; min-width: 26px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-2); }
+.fc-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 12px; }
+.fc-tools .btn[aria-pressed="true"] { color: var(--pen); background: var(--pen-wash); }
+@media (max-width: 480px) {
+  .fc-controls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  .fc-controls .counter { grid-column: 1 / -1; grid-row: 1; justify-self: center; }
+  .fc-controls > .btn { width: 100%; padding: 0 10px; justify-self: stretch; }
+  .flash { min-height: 260px; }
+  .face-body { padding: 14px 18px 22px; }
+}
+
+/* learn */
+.learn-top { display: grid; gap: 8px; margin-bottom: 18px; }
+.lt-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+.lt-counts { font-size: var(--fs-sm); color: var(--ink-2); }
+.lt-row .btn { margin-left: auto; }
+.q-card { border-radius: 8px; background: var(--paper); box-shadow: var(--shadow-lift); overflow: hidden; }
+.q-card .face-head { padding-right: 8px; }
+.q-body { display: grid; align-items: center; min-height: 150px; padding: 18px 24px 24px; }
+.q-text { font-family: var(--font-hand); white-space: pre-wrap; overflow-wrap: anywhere; }
+.q-text.t-xl { font-size: clamp(1.7rem, 4.6vw, 2.4rem); }
+.q-text.t-lg { font-size: clamp(1.4rem, 3.6vw, 1.9rem); }
+.answer-area { margin-top: 18px; }
+.prompt-hint { margin-bottom: 10px; font-weight: 700; font-size: var(--fs-sm); color: var(--ink-2); }
+.choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 600px) { .choices { grid-template-columns: minmax(0, 1fr); } }
+.choice { display: flex; align-items: flex-start; gap: 12px; min-height: 62px; padding: 14px 16px; text-align: left; border: 2px solid var(--line); border-radius: var(--r-sm); background: var(--paper); color: var(--ink); font-family: var(--font-hand); font-size: var(--fs-md); line-height: 1.35; transition: border-color .15s, background-color .15s, opacity .15s; }
+.choice:hover { border-color: var(--pen); }
+.choice[aria-pressed="true"] { border-color: var(--pen); background: var(--pen-wash); }
+.choice .key { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); font-family: var(--font-mono); font-size: var(--fs-sm); }
+.choice-t { min-width: 0; padding-top: 1px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.choice.locked { pointer-events: none; }
+.choice.is-right { border-color: var(--good); background: var(--good-wash); }
+.choice.is-wrong { border-color: var(--bad); background: var(--bad-wash); }
+.choice.dim { opacity: .5; }
+.dont-know { margin-top: 10px; }
+.write { display: flex; gap: 10px; }
+.write .field { font-family: var(--font-hand); font-size: var(--fs-md); }
+.write .field[readonly] { background: var(--panel); }
+@media (max-width: 520px) { .write { flex-direction: column; } }
+.feedback { display: grid; gap: 8px; margin-top: 16px; padding: 14px 16px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--paper); }
+.feedback.ok { border-color: var(--good); background: var(--good-wash); }
+.feedback.no { border-color: var(--bad); background: var(--bad-wash); }
+.fb-title { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.feedback.ok .fb-title { color: var(--good); }
+.feedback.no .fb-title { color: var(--bad); }
+.fb-line { display: grid; gap: 2px; }
+.fb-k { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.fb-v { font-family: var(--font-hand); font-size: var(--fs-md); white-space: pre-wrap; overflow-wrap: anywhere; }
+.fb-v.strike { text-decoration: line-through; text-decoration-color: var(--bad); color: var(--ink-2); }
+.fb-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.round-end { display: grid; gap: 14px; padding: 24px; border-radius: var(--r); background: var(--paper); box-shadow: var(--shadow); }
+.round-list { list-style: none; margin: 0; padding: 0; }
+.round-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.round-list li:last-child { border-bottom: 0; }
+.rl-t { font-family: var(--font-hand); font-weight: 600; overflow-wrap: anywhere; min-width: 0; }
+</style>
+<style>
+/* test */
+.setup { display: grid; gap: 18px; }
+.setup-grid { display: grid; gap: 18px; }
+.setup-row { display: grid; gap: 4px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.setup-row legend { padding: 0; }
+.num-row { display: flex; align-items: center; gap: 8px; }
+.num-row .field { width: 96px; text-align: center; font-family: var(--font-mono); font-size: var(--fs-md); }
+.test-intro { display: grid; gap: 4px; margin-bottom: 18px; }
+.test-list { display: grid; gap: 14px; }
+.test-sec { margin-top: 12px; font-family: var(--font-ui); font-size: var(--fs-sm); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.test-q { display: grid; gap: 12px; padding: 18px 20px; border-radius: var(--r); background: var(--paper); box-shadow: var(--shadow); scroll-margin-top: 80px; }
+.tq-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--margin); }
+.qnum { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--ink-3); white-space: nowrap; }
+.tq-prompt { font-family: var(--font-hand); font-size: var(--fs-lg); line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tq-prompt.t-sm, .tq-prompt.t-xs { font-size: var(--fs-md); }
+.tf-shown { display: grid; gap: 2px; padding: 10px 14px; border-radius: var(--r-sm); background: var(--panel); }
+.tf-shown .hand { font-size: var(--fs-md); white-space: pre-wrap; overflow-wrap: anywhere; }
+.tf-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.choice.tf { justify-content: center; font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-base); }
+.test-foot { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; padding: 14px 0 calc(14px + env(safe-area-inset-bottom, 0px)); background: var(--desk); border-top: 1px solid var(--line); }
+.answered { font-size: var(--fs-sm); color: var(--ink-2); }
+.score-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; align-items: center; padding: 24px; border-radius: var(--r); background: var(--paper); box-shadow: var(--shadow); }
+@media (max-width: 560px) { .score-card { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; } .score-card .res-actions { justify-content: center; } }
+.score-card .res-actions { justify-content: flex-start; }
+.score-ring { --p: 0; display: grid; place-items: center; width: 120px; height: 120px; border-radius: 50%; background: conic-gradient(var(--pen) calc(var(--p) * 1%), var(--line) 0); }
+.score-ring b { display: grid; place-items: center; width: 92px; height: 92px; border-radius: 50%; background: var(--paper); font-family: var(--font-mono); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.score-text { display: grid; gap: 8px; }
+.review { display: grid; gap: 12px; margin-top: 28px; }
+.rv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; padding: 16px 18px; border-radius: var(--r); background: var(--paper); box-shadow: var(--shadow); }
+.rv-mark { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; }
+.rv-ok .rv-mark { background: var(--good-wash); color: var(--good); }
+.rv-no .rv-mark { background: var(--bad-wash); color: var(--bad); }
+.rv-main { display: grid; gap: 8px; min-width: 0; }
+.rv-top { display: flex; align-items: center; gap: 10px; }
+.rv-prompt { font-family: var(--font-hand); font-size: var(--fs-md); font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rv-line { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 2px 12px; font-size: var(--fs-sm); }
+.rv-line .k { color: var(--ink-3); font-weight: 700; }
+.rv-line .v { font-family: var(--font-hand); font-size: var(--fs-base); white-space: pre-wrap; overflow-wrap: anywhere; }
+.rv-line .v.bad { color: var(--bad); }
+.rv-line .v.good { color: var(--good); }
+@media (max-width: 520px) { .rv-line { grid-template-columns: minmax(0, 1fr); } }
+.rv-fix { justify-self: start; }
+
+/* match */
+.match-ready { display: grid; justify-items: center; gap: 14px; padding: 36px 24px; text-align: center; }
+.match-ready p { max-width: 46ch; }
+.best { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--ink-2); }
+.big-time { font-family: var(--font-mono); font-weight: 700; font-size: clamp(2.6rem, 9vw, 3.6rem); line-height: 1; font-variant-numeric: tabular-nums; }
+.big-time small { font-family: var(--font-ui); font-size: var(--fs-md); font-weight: 500; color: var(--ink-2); }
+.match-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.timer-wrap { display: flex; align-items: center; gap: 10px; color: var(--ink-2); }
+.timer { min-width: 4.5ch; font-family: var(--font-mono); font-weight: 700; font-size: 1.9rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+.penalty { font-family: var(--font-mono); font-weight: 700; color: var(--bad); opacity: 0; transition: opacity .2s; }
+.penalty.show { opacity: 1; }
+.match-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .match-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } }
+@media (max-width: 370px) { .match-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.mt { display: grid; place-items: center; min-height: 110px; padding: 10px; border: 2px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow); font-family: var(--font-hand); line-height: 1.25; text-align: center; overflow-wrap: anywhere; transition: transform .15s, opacity .25s, border-color .12s, background-color .12s; }
+.mt:hover { border-color: var(--pen-soft); }
+.mt-l { font-size: 1.15rem; font-weight: 600; } .mt-m { font-size: 1rem; } .mt-s { font-size: .875rem; } .mt-xs { font-size: .78rem; }
+.mt.sel { border-color: var(--pen); background: var(--pen-wash); transform: translateY(-2px); }
+.mt.ok { border-color: var(--good); background: var(--good-wash); }
+.mt.wrong { border-color: var(--bad); background: var(--bad-wash); animation: shake .32s; }
+.mt.gone { opacity: 0; transform: scale(.86); pointer-events: none; }
+@media (max-width: 640px) { .mt { min-height: 92px; padding: 8px; } }
+@keyframes shake { 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+
+/* modal + toast */
+.overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: var(--scrim); animation: inFade .15s ease-out; }
+.modal { width: min(440px, 100%); padding: 22px; border-radius: var(--r); background: var(--paper); box-shadow: var(--shadow-lift); }
+.modal h2 { margin-bottom: 8px; font-family: var(--font-hand); font-weight: 700; font-size: var(--fs-lg); line-height: 1.25; overflow-wrap: anywhere; }
+.modal p { margin-bottom: 18px; color: var(--ink-2); }
+.modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.toasts { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); z-index: 60; display: grid; justify-items: center; gap: 8px; width: max-content; max-width: calc(100% - 32px); transform: translateX(-50%); pointer-events: none; }
+.toast { padding: 10px 16px; border-radius: 10px; background: var(--ink); color: var(--desk); font-weight: 500; text-align: center; box-shadow: var(--shadow-lift); animation: inFade .2s ease-out; transition: opacity .3s; }
+.toast.out { opacity: 0; }
+
+.backup { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: var(--fs-sm); }
+.backup p { flex: 1 1 260px; max-width: 60ch; }
+.backup-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+<main id="app" class="shell"><p class="muted">Loading Three by Five…</p></main>
+<script>
+(() => {
+'use strict';
+
+/* ================= DOM helpers ================= */
+const PROP_KEYS = new Set(['value', 'checked', 'disabled', 'hidden', 'readOnly', 'spellcheck', 'indeterminate', 'selected']);
+function h(tag, props, ...kids) {
+  const el = document.createElement(tag);
+  if (props) {
+    for (const k of Object.keys(props)) {
+      const v = props[k];
+      if (PROP_KEYS.has(k)) { if (v !== undefined && v !== null) el[k] = v; continue; }
+      if (v == null || v === false) continue;
+      if (k === 'class') el.className = v;
+      else if (k === 'text') el.textContent = v;
+      else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? '' : String(v));
+    }
+  }
+  append(el, kids);
+  return el;
+}
+function append(el, kids) {
+  for (const kid of kids) {
+    if (kid == null || kid === false || kid === true) continue;
+    if (Array.isArray(kid)) append(el, kid);
+    else el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  }
+}
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+const ICONS = {
+  back: '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  star: '<path d="M12 2.7l2.41 6.48 6.91.29-5.42 4.3 1.86 6.66L12 16.6l-5.76 3.83 1.86-6.66-5.42-4.3 6.91-.29z"/>',
+  speak: '<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',
+  shuffle: '<path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="m4 4 5 5"/>',
+  sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+  edit: '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  trash: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
+  reset: '<path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  cloud: '<path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9.5a4.25 4.25 0 0 1-.5 8.5z"/>',
+  cloudCheck: '<path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9.5a4.25 4.25 0 0 1-.5 8.5z"/><path d="m9.5 13 2 2 3.5-3.5"/>',
+  cloudOff: '<path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9.5a4.25 4.25 0 0 1-.5 8.5z"/><path d="M12 10v3M12 15.5v.01"/>',
+  laptop: '<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/>',
+  cards: '<rect x="2" y="8" width="15" height="11" rx="2"/><path d="M6 5h13a2 2 0 0 1 2 2v9"/>',
+  learn: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>',
+  test: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="m9 15 2 2 4-4"/>',
+  match: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  notes: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/>',
+  swap: '<path d="M7 20V4"/><path d="m3 8 4-4 4 4"/><path d="M17 4v16"/><path d="m21 16-4 4-4-4"/>',
+  prev: '<path d="m15 18-6-6 6-6"/>',
+  next: '<path d="m9 18 6-6-6-6"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+};
+function icon(name, size = 20, cls = '') {
+  const s = document.createElementNS(SVGNS, 'svg');
+  s.setAttribute('viewBox', '0 0 24 24');
+  s.setAttribute('width', String(size));
+  s.setAttribute('height', String(size));
+  s.setAttribute('fill', 'none');
+  s.setAttribute('stroke', 'currentColor');
+  s.setAttribute('stroke-width', '2');
+  s.setAttribute('stroke-linecap', 'round');
+  s.setAttribute('stroke-linejoin', 'round');
+  s.setAttribute('aria-hidden', 'true');
+  s.setAttribute('focusable', 'false');
+  s.setAttribute('class', ('icon ' + cls).trim());
+  s.innerHTML = ICONS[name] || '';
+  return s;
+}
+function brandMark() {
+  const s = document.createElementNS(SVGNS, 'svg');
+  s.setAttribute('viewBox', '0 0 34 26');
+  s.setAttribute('class', 'brand-mark');
+  s.setAttribute('aria-hidden', 'true');
+  s.innerHTML = '<rect class="bm-back" x="5" y="1.5" width="27" height="17" rx="2" transform="rotate(7 18.5 10)"/>'
+    + '<rect class="bm-front" x="2" y="7" width="27" height="17" rx="2"/>'
+    + '<path class="bm-red" d="M2.7 12h25.6"/><path class="bm-blue" d="M5 16.5h21M5 20.5h21"/>';
+  return s;
+}
+
+/* ================= small utilities ================= */
+const rid = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const plural = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
+function sizeClass(text) {
+  const n = String(text || '').length;
+  return n <= 18 ? 't-xl' : n <= 60 ? 't-lg' : n <= 140 ? 't-md' : n <= 320 ? 't-sm' : 't-xs';
+}
+function tileSize(text) {
+  const n = String(text || '').length;
+  return n <= 24 ? 'mt-l' : n <= 70 ? 'mt-m' : n <= 140 ? 'mt-s' : 'mt-xs';
+}
+function norm(s) {
+  return String(s == null ? '' : s).normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/&/g, ' and ')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ').trim()
+    .replace(/^(the|a|an) /, '');
+}
+function lev(a, b) {
+  if (a === b) return 0;
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = new Array(n + 1), cur = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    cur[0] = i;
+    for (let j = 1; j <= n; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    const t = prev; prev = cur; cur = t;
+  }
+  return prev[n];
+}
+/* Typed answers: ignore case, accents, punctuation and a leading "the/a/an";
+   allow small typos; text in parentheses is optional; "a / b" or "a; b" accepts either short answer. */
+function answerMatches(given, expected) {
+  const g = norm(given);
+  if (!g) return false;
+  const variants = new Set();
+  const add = (s) => { const v = norm(s); if (v) variants.add(v); };
+  add(expected);
+  add(String(expected).replace(/\([^)]*\)/g, ' '));
+  const parts = String(expected).split(/\s*[\/;]\s*/);
+  if (parts.length > 1 && parts.every(p => p.trim().split(/\s+/).length <= 4)) parts.forEach(add);
+  for (const v of variants) {
+    if (g === v) return true;
+    const tol = v.length <= 3 ? 0 : v.length <= 7 ? 1 : v.length <= 14 ? 2 : Math.min(5, Math.floor(v.length * 0.12));
+    if (tol && Math.abs(g.length - v.length) <= tol && lev(g, v) <= tol) return true;
+  }
+  return false;
+}
+function ago(ts) {
+  if (!ts) return '';
+  const s = Math.max(0, (Date.now() - ts) / 1000);
+  if (s < 45) return 'just now';
+  const m = Math.round(s / 60);
+  if (m < 60) return m + (m === 1 ? ' minute ago' : ' minutes ago');
+  const hr = Math.round(m / 60);
+  if (hr < 24) return hr + (hr === 1 ? ' hour ago' : ' hours ago');
+  const d = Math.round(hr / 24);
+  if (d === 1) return 'yesterday';
+  if (d < 30) return d + ' days ago';
+  return 'on ' + new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function fmtClock(ms) {
+  const t = Math.max(0, Math.round(ms / 1000));
+  return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+}
+const secs = (ms) => (ms / 1000).toFixed(1);
+function readJSON(key, fallback) {
+  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (e) { return fallback; }
+}
+function writeJSON(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e) { return false; }
+}
+function grow(ta) {
+  if (!ta.isConnected) return;
+  ta.style.height = 'auto';
+  ta.style.height = (ta.scrollHeight + 2) + 'px';
+}
+const oneLine = (s) => String(s).replace(/\s*\n\s*/g, ' ').trim();
+
+/* ================= per-viewer preferences (this browser only) ================= */
+const PREFS_KEY = 'tbf.prefs.v1';
+const DEFAULT_PREFS = {
+  sort: 'recent',
+  fc: { front: 'term', shuffle: false, starred: false, track: true },
+  learn: { answer: 'term', mc: true, written: true, starred: false },
+  test: { n: 20, tf: true, mc: true, written: true, dir: 'term' },
+};
+const prefs = (() => {
+  const saved = readJSON(PREFS_KEY, {}) || {};
+  return {
+    sort: saved.sort === 'az' ? 'az' : 'recent',
+    fc: Object.assign({}, DEFAULT_PREFS.fc, saved.fc),
+    learn: Object.assign({}, DEFAULT_PREFS.learn, saved.learn),
+    test: Object.assign({}, DEFAULT_PREFS.test, saved.test),
+  };
+})();
+const savePrefs = () => writeJSON(PREFS_KEY, prefs);
+
+/* ================= shared UI pieces ================= */
+const toastWrap = h('div', { class: 'toasts', role: 'status', 'aria-live': 'polite' });
+document.body.append(toastWrap);
+function toast(msg) {
+  const t = h('div', { class: 'toast', text: msg });
+  toastWrap.append(t);
+  while (toastWrap.children.length > 3) toastWrap.firstChild.remove();
+  setTimeout(() => t.classList.add('out'), 3200);
+  setTimeout(() => t.remove(), 3600);
+}
+
+function confirmBox({ title, body, ok = 'OK', cancel = 'Cancel', danger = false }) {
+  return new Promise((resolve) => {
+    const prev = document.activeElement;
+    let done = false;
+    const close = (v) => {
+      if (done) return;
+      done = true;
+      overlay.remove();
+      document.removeEventListener('keydown', onKey, true);
+      if (prev && prev.isConnected && prev.focus) prev.focus();
+      resolve(v);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(false); }
+      else if (e.key === 'Tab') {
+        const f = [...overlay.querySelectorAll('button')];
+        const i = f.indexOf(document.activeElement);
+        e.preventDefault();
+        f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+      }
+    };
+    const okBtn = h('button', { class: 'btn ' + (danger ? 'btn-danger' : 'btn-primary'), type: 'button', onclick: () => close(true) }, ok);
+    const overlay = h('div', { class: 'overlay', onclick: (e) => { if (e.target === overlay) close(false); } },
+      h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'modal-title' },
+        h('h2', { id: 'modal-title', text: title }),
+        body ? h('p', { text: body }) : null,
+        h('div', { class: 'modal-actions' },
+          h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => close(false) }, cancel),
+          okBtn)));
+    document.body.append(overlay);
+    document.addEventListener('keydown', onKey, true);
+    okBtn.focus();
+  });
+}
+
+function seg(options, value, onChange, opts = {}) {
+  const wrap = h('div', { class: 'seg' + (opts.cls ? ' ' + opts.cls : ''), role: 'group', 'aria-label': opts.label || null });
+  for (const op of options) {
+    const b = h('button', {
+      type: 'button',
+      'aria-pressed': String(op.v === value),
+      disabled: !!op.disabled,
+      onclick: () => {
+        if (op.v === value) return;
+        value = op.v;
+        for (const x of wrap.children) x.setAttribute('aria-pressed', String(x === b));
+        onChange(op.v);
+      },
+    }, op.label);
+    wrap.append(b);
+  }
+  return wrap;
+}
+function switchRow(id, label, hint, checked, onChange, disabled) {
+  const input = h('input', { type: 'checkbox', role: 'switch', id, checked: !!checked, disabled: !!disabled, onchange: (e) => onChange(e.target.checked) });
+  return h('label', { class: 'switch' + (disabled ? ' is-disabled' : ''), for: id },
+    h('span', { class: 'sw-text' }, h('span', { text: label }), hint ? h('small', { text: hint }) : null),
+    input);
+}
+function checkRow(id, label, checked, onChange) {
+  const input = h('input', { type: 'checkbox', id, checked: !!checked, onchange: (e) => onChange(e.target.checked, e.target) });
+  return h('label', { class: 'check', for: id }, input, h('span', { text: label }));
+}
+function progressOf(set, ids) {
+  const list = ids || set.cards.map(c => c.id);
+  let mastered = 0, learning = 0;
+  for (const id of list) {
+    const l = set.learn[id];
+    if (l === 2) mastered++;
+    else if (l === 0 || l === 1) learning++;
+  }
+  return { total: list.length, mastered, learning, fresh: list.length - mastered - learning };
+}
+function meter(p, cls = '') {
+  const pct = (n) => (p.total ? (n / p.total) * 100 : 0).toFixed(2) + '%';
+  return h('div', { class: 'meter ' + cls, role: 'img', 'aria-label': `${p.mastered} mastered, ${p.learning} learning, ${p.fresh} new` },
+    h('span', { class: 'm-mastered', style: 'width:' + pct(p.mastered) }),
+    h('span', { class: 'm-learning', style: 'width:' + pct(p.learning) }));
+}
+async function copyText(text, ta, okMsg) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(okMsg || 'Copied');
+    return;
+  } catch (e) { /* fall through */ }
+  if (ta) {
+    ta.focus();
+    ta.select();
+    try { if (document.execCommand('copy')) { toast(okMsg || 'Copied'); return; } } catch (e) { /* ignore */ }
+  }
+  toast('Press Ctrl+C (or Cmd+C) to copy the selected text.');
+}
+const canSpeak = typeof window.speechSynthesis !== 'undefined' && typeof window.SpeechSynthesisUtterance === 'function';
+function speak(text) {
+  if (!canSpeak) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(String(text));
+    u.rate = 0.95;
+    window.speechSynthesis.speak(u);
+  } catch (e) { /* ignore */ }
+}
+
+/* ================= example set (lives only in memory) ================= */
+const EXAMPLE_ID = 'example';
+const EXAMPLE_ROWS = [
+  ['Nucleus', 'Control center of the cell; holds the DNA'],
+  ['Mitochondria', 'Organelles that turn food into usable energy (ATP)'],
+  ['Ribosome', 'Builds proteins from amino acids'],
+  ['Cell membrane', 'Thin barrier that controls what enters and leaves the cell'],
+  ['Cell wall', 'Stiff outer layer that supports and protects plant cells'],
+  ['Chloroplast', 'Captures sunlight to make food through photosynthesis'],
+  ['Cytoplasm', 'Jelly-like fluid that fills the cell and holds the organelles'],
+  ['Vacuole', 'Storage sac for water, food and waste; very large in plant cells'],
+  ['Golgi apparatus', 'Packages proteins and ships them where they are needed'],
+  ['Endoplasmic reticulum', 'Network of folded membranes that moves materials through the cell'],
+  ['Lysosome', 'Uses enzymes to break down waste and worn-out cell parts'],
+  ['Cytoskeleton', 'Network of protein fibers that gives the cell its shape'],
+];
+function makeExample() {
+  return {
+    id: EXAMPLE_ID, title: 'Parts of a Cell', desc: 'An example set to try every study mode.',
+    cards: EXAMPLE_ROWS.map((r, i) => ({ id: 'ex' + i, t: r[0], d: r[1] })),
+    created: 0, updated: 0, studied: 0, rev: 0, stars: [], learn: {}, matchBest: 0, lastTest: null,
+  };
+}
+let exampleSet = makeExample();
+
+/* ================= storage =================
+   "cloud": the viewer's private area in this page's database (follows them across devices).
+   "local": this browser only, used when the database is not available to this viewer. */
+const LOCAL_KEY = 'tbf.sets.v1';
+const MAX_DOC_CHARS = 240000;
+const Store = { mode: 'connecting', loaded: false, sets: new Map(), raw: new Map(), col: null, unsub: null, stranded: [] };
+const listeners = new Set();
+const dirty = new Set(), inflight = new Set(), again = new Set(), queued = new Set(), retried = new Set();
+const timers = new Map();
+let syncError = false;
+let resolveReady;
+const storeReady = new Promise((r) => { resolveReady = r; });
+
+function emit() { for (const fn of listeners) { try { fn(); } catch (e) { console.error(e); } } }
+
+function cleanSet(id, d) {
+  const str = (v, max) => String(v == null ? '' : v).slice(0, max);
+  const cards = Array.isArray(d.cards)
+    ? d.cards.filter(c => c && typeof c === 'object').map((c, i) => ({ id: typeof c.id === 'string' && c.id ? c.id : 'c' + i, t: str(c.t, 2000), d: str(c.d, 4000) }))
+    : [];
+  const learn = {};
+  if (d.learn && typeof d.learn === 'object' && !Array.isArray(d.learn)) {
+    for (const k of Object.keys(d.learn)) { const v = d.learn[k]; if (v === 0 || v === 1 || v === 2) learn[k] = v; }
+  }
+  const lt = d.lastTest && typeof d.lastTest === 'object'
+    ? { score: +d.lastTest.score || 0, total: +d.lastTest.total || 0, at: +d.lastTest.at || 0 } : null;
+  return {
+    id,
+    title: str(d.title, 300) || 'Untitled set',
+    desc: str(d.desc, 2000),
+    cards,
+    created: +d.created || 0, updated: +d.updated || 0, studied: +d.studied || 0, rev: +d.rev || 0,
+    stars: Array.isArray(d.stars) ? d.stars.filter(x => typeof x === 'string') : [],
+    learn,
+    matchBest: +d.matchBest || 0,
+    lastTest: lt && lt.total ? lt : null,
+  };
+}
+function readLocalSets() {
+  const arr = readJSON(LOCAL_KEY, []);
+  return Array.isArray(arr) ? arr.filter(x => x && typeof x.id === 'string' && x.id !== EXAMPLE_ID).map(x => cleanSet(x.id, x)) : [];
+}
+let localTimer = 0, warnedLocal = false;
+function writeLocalSoon() { clearTimeout(localTimer); localTimer = setTimeout(writeLocalNow, 250); }
+function writeLocalNow() {
+  clearTimeout(localTimer);
+  if (Store.mode !== 'local') return;
+  const ok = writeJSON(LOCAL_KEY, [...Store.sets.values()]);
+  if (!ok && !warnedLocal) {
+    warnedLocal = true;
+    toast("This browser won't let the page save, so new sets will be gone when you close it.");
+  }
+}
+
+function goLocal(reason) {
+  if (Store.unsub) { try { Store.unsub(); } catch (e) { /* ignore */ } Store.unsub = null; }
+  Store.mode = 'local';
+  for (const t of timers.values()) clearTimeout(t);
+  timers.clear(); dirty.clear(); queued.clear(); again.clear(); retried.clear();
+  syncError = false;
+  for (const s of readLocalSets()) if (!Store.sets.has(s.id)) Store.sets.set(s.id, s);
+  Store.stranded = [];
+  Store.loaded = true;
+  writeLocalNow();
+  if (reason) toast(reason);
+  resolveReady();
+  emit();
+}
+
+async function connect() {
+  const c = window.claude;
+  if (!c || typeof c.use !== 'function') return goLocal();
+  let db = null, user = null;
+  try { [db, user] = await Promise.all([c.use('db'), c.use('user')]); } catch (e) { /* treat as absent */ }
+  if (!db || !user) return goLocal();
+  let uid = null, can = null;
+  try { uid = await user.id(); } catch (e) { /* ignore */ }
+  try { can = await user.can('data.write'); } catch (e) { /* ignore */ }
+  if (!uid || can === false) return goLocal();
+  let col;
+  try { col = db.collection('data/users/' + uid); } catch (e) { return goLocal(); }
+  Store.col = col;
+  Store.mode = 'cloud';
+  Store.stranded = readLocalSets();
+  subscribe();
+  for (const id of queued) schedule(id, 0);
+  queued.clear();
+  resolveReady();
+  emit();
+}
+let resubscribed = 0;
+function subscribe() {
+  if (Store.unsub) { try { Store.unsub(); } catch (e) { /* ignore */ } }
+  Store.unsub = Store.col.onSnapshot(onSnap, (e) => {
+    const code = e && e.code;
+    if (code === 'unavailable' && Date.now() - resubscribed > 60000) {
+      resubscribed = Date.now();
+      setTimeout(() => { if (Store.mode === 'cloud') subscribe(); }, 3000);
+      return;
+    }
+    goLocal('Syncing stopped, so your sets are saved in this browser for now.');
+  });
+}
+function onSnap(snap) {
+  if (Store.mode !== 'cloud') return;
+  const seen = new Set();
+  let changed = false;
+  for (const d of snap.docs) {
+    if (!d.exists) continue;
+    const data = d.data();
+    if (!data) continue;
+    seen.add(d.id);
+    if (dirty.has(d.id) || inflight.has(d.id)) continue;
+    if (Store.raw.get(d.id) === data && Store.sets.has(d.id)) continue;
+    Store.raw.set(d.id, data);
+    Store.sets.set(d.id, cleanSet(d.id, data));
+    changed = true;
+  }
+  if (!(snap.metadata && snap.metadata.fromCache)) {
+    for (const id of [...Store.sets.keys()]) {
+      if (!seen.has(id) && !dirty.has(id) && !inflight.has(id)) { Store.sets.delete(id); Store.raw.delete(id); changed = true; }
+    }
+  }
+  if (!Store.loaded) { Store.loaded = true; changed = true; }
+  if (changed) emit();
+}
+
+function persist(id, delay = 700) {
+  if (id === EXAMPLE_ID) return;
+  if (Store.mode === 'local') { writeLocalSoon(); return; }
+  dirty.add(id);
+  if (Store.mode === 'connecting') { queued.add(id); updateSync(); return; }
+  schedule(id, delay);
+}
+function schedule(id, delay) {
+  clearTimeout(timers.get(id));
+  timers.set(id, setTimeout(() => flush(id), delay));
+  updateSync();
+}
+async function flush(id) {
+  clearTimeout(timers.get(id));
+  timers.delete(id);
+  if (Store.mode !== 'cloud') return;
+  if (inflight.has(id)) { again.add(id); return; }
+  inflight.add(id);
+  updateSync();
+  const s = Store.sets.get(id);
+  let failed = null;
+  try {
+    if (s) {
+      const json = JSON.stringify(s);
+      if (json.length > MAX_DOC_CHARS) throw { code: 'too_big' };
+      await Store.col.doc(id).set(JSON.parse(json));
+    } else {
+      await Store.col.doc(id).delete();
+    }
+    retried.delete(id);
+  } catch (e) {
+    failed = e || {};
+  }
+  inflight.delete(id);
+  if (Store.mode !== 'cloud') return;
+  if (failed) { handleWriteError(failed, id); updateSync(); return; }
+  if (again.has(id)) { again.delete(id); flush(id); return; }
+  if (!timers.has(id)) dirty.delete(id);
+  if (!dirty.size) syncError = false;
+  updateSync();
+}
+function handleWriteError(e, id) {
+  const code = e.code;
+  again.delete(id);
+  if (code === 'too_big') { dirty.delete(id); toast('This set is too big to save to your account. Split it into two sets.'); return; }
+  if (code === 'quota_exceeded') { dirty.delete(id); toast("Your storage is full. Delete a set you don't need, then try again."); return; }
+  if (code === 'unavailable' || code === 'resource_exhausted') {
+    if (!retried.has(id)) { retried.add(id); schedule(id, 1500 + Math.random() * 1500); return; }
+    retried.delete(id);
+    syncError = true;
+    toast("Couldn't save your last change. Tap “Not saved” at the top to try again.");
+    return;
+  }
+  goLocal("Your sets can't be saved to your account here, so they are saved in this browser instead.");
+}
+function retrySync() {
+  syncError = false;
+  for (const id of dirty) schedule(id, 0);
+  updateSync();
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'hidden') return;
+  if (Store.mode === 'local') writeLocalNow();
+  else if (Store.mode === 'cloud') for (const id of [...timers.keys()]) flush(id);
+});
+window.addEventListener('pagehide', () => { if (Store.mode === 'local') writeLocalNow(); });
+
+function moveStranded() {
+  const list = Store.stranded.filter(s => !Store.sets.has(s.id));
+  for (const s of list) { Store.sets.set(s.id, s); persist(s.id, 0); }
+  Store.stranded = [];
+  try { localStorage.removeItem(LOCAL_KEY); } catch (e) { /* ignore */ }
+  emit();
+  toast(`Added ${plural(list.length, 'set')} to your account`);
+}
+
+/* ---------- reading and changing sets ---------- */
+function getSet(id) { return id === EXAMPLE_ID ? exampleSet : (Store.sets.get(id) || null); }
+function allSets() { return [...Store.sets.values()]; }
+const recency = (s) => Math.max(s.studied || 0, s.updated || 0, s.created || 0);
+function changeSet(id, fn, opts = {}) {
+  const s = getSet(id);
+  if (!s) return null;
+  fn(s);
+  s.rev = Date.now();
+  persist(id, opts.delay);
+  if (!opts.quiet) emit();
+  return s;
+}
+function createSet({ title, desc, cards }) {
+  const now = Date.now();
+  const s = { id: rid('s'), title, desc, cards, created: now, updated: now, studied: 0, rev: now, stars: [], learn: {}, matchBest: 0, lastTest: null };
+  Store.sets.set(s.id, s);
+  persist(s.id, 0);
+  emit();
+  return s;
+}
+function removeSet(id) {
+  if (id === EXAMPLE_ID) return;
+  Store.sets.delete(id);
+  Store.raw.delete(id);
+  if (Store.mode === 'local') writeLocalSoon();
+  else { dirty.add(id); if (Store.mode === 'cloud') schedule(id, 0); else queued.add(id); }
+  emit();
+}
+function toggleStar(setId, cardId) {
+  let on = false;
+  changeSet(setId, (st) => {
+    const i = st.stars.indexOf(cardId);
+    if (i >= 0) st.stars.splice(i, 1); else { st.stars.push(cardId); on = true; }
+  }, { quiet: true, delay: 500 });
+  return on;
+}
+const starCount = (s) => s.cards.reduce((n, c) => n + (s.stars.includes(c.id) ? 1 : 0), 0);
+function exportText(s) { return s.cards.map(c => oneLine(c.t) + '\t' + oneLine(c.d)).join('\n'); }
+
+/* ---------- sync chip ---------- */
+function updateSync() {
+  const el = document.getElementById('sync');
+  if (!el) return;
+  let state, text, ic, tip;
+  if (Store.mode === 'connecting') { state = 'loading'; text = 'Loading'; ic = 'cloud'; tip = 'Loading your sets'; }
+  else if (Store.mode === 'local') { state = 'local'; text = 'Saved on this device'; ic = 'laptop'; tip = 'Your sets are saved in this browser on this device.'; }
+  else if (syncError) { state = 'error'; text = 'Not saved'; ic = 'cloudOff'; tip = 'Your last change did not save. Tap to try again.'; }
+  else if (dirty.size || inflight.size) { state = 'saving'; text = 'Saving…'; ic = 'cloud'; tip = 'Saving your changes'; }
+  else { state = 'synced'; text = 'Saved to account'; ic = 'cloudCheck'; tip = 'Your sets are saved to your Claude account. Open this page on any device to see them.'; }
+  if (el.dataset.state === state) return;
+  el.dataset.state = state;
+  el.title = tip;
+  el.setAttribute('aria-label', text + '. ' + tip);
+  el.replaceChildren(icon(ic, 18), h('span', { class: 'sync-text', text }));
+}
+function onSyncClick() {
+  if (syncError) { retrySync(); return; }
+  const el = document.getElementById('sync');
+  if (el && el.title) toast(el.title);
+}
+
+/* ---------- optional: Claude makes cards from notes ---------- */
+let sampleFn = null;
+const sampleReady = (async () => {
+  try { if (window.claude && typeof window.claude.use === 'function') sampleFn = await window.claude.use('sample'); } catch (e) { sampleFn = null; }
+  return sampleFn;
+})();
+
+/* ================= router ================= */
+const MODES = [
+  { view: 'flashcards', name: 'Flashcards', short: 'Cards', icon: 'cards', hint: 'Flip through and sort what you know.' },
+  { view: 'learn', name: 'Learn', short: 'Learn', icon: 'learn', hint: 'Questions that adapt until you master each term.' },
+  { view: 'test', name: 'Test', short: 'Test', icon: 'test', hint: 'A graded practice test with mixed questions.' },
+  { view: 'match', name: 'Match', short: 'Match', icon: 'match', hint: 'Race the clock to pair terms and definitions.' },
+];
+const app = document.getElementById('app');
+const view = { name: 'home' };
+let keyHandler = null;
+const VIEWS = {};
+
+function show(name, params = {}) {
+  if (view.cleanup) { try { view.cleanup(); } catch (e) { console.error(e); } }
+  for (const k of Object.keys(view)) delete view[k];
+  Object.assign(view, { name }, params);
+  keyHandler = null;
+  renderView();
+  window.scrollTo(0, 0);
+}
+function renderView() {
+  const fn = VIEWS[view.name] || VIEWS.home;
+  view.refresh = null;
+  let node;
+  try { node = fn(); } catch (e) { console.error(e); node = errorView(); }
+  app.replaceChildren(node);
+}
+function errorView() {
+  return h('section', { class: 'empty' }, h('div', null,
+    h('h2', { text: 'Something went wrong on this screen' }),
+    h('p', { text: 'Your sets are safe. Go back and try again.' }),
+    h('div', { class: 'empty-actions' }, h('button', { class: 'btn btn-primary', type: 'button', onclick: () => show('home') }, 'Back to your sets'))));
+}
+function missingSet() {
+  queueMicrotask(() => show('home'));
+  return h('div');
+}
+listeners.add(() => { updateSync(); if (view.refresh) view.refresh(); });
+document.addEventListener('keydown', (e) => {
+  if (!keyHandler || document.querySelector('.overlay')) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target;
+  const typing = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+  keyHandler(e, typing);
+});
+function restoreFocus(root, render) {
+  const a = document.activeElement;
+  const fk = a && root.contains(a) && a.dataset ? a.dataset.fk : null;
+  render();
+  if (!fk) return;
+  const el = [...root.querySelectorAll('[data-fk]')].find(x => x.dataset.fk === fk);
+  if (!el) return;
+  el.focus();
+  if (typeof el.setSelectionRange === 'function' && typeof el.value === 'string') {
+    try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) { /* ignore */ }
+  }
+}
+
+/* ================= top bar ================= */
+function buildTopbar() {
+  const bar = h('header', { class: 'topbar' },
+    h('div', { class: 'shell topbar-in' },
+      h('button', { class: 'brand', type: 'button', 'aria-label': 'Three by Five, your sets', onclick: () => show('home') }, brandMark(), h('span', { text: 'Three by Five' })),
+      h('span', { class: 'spacer' }),
+      h('button', { class: 'sync', id: 'sync', type: 'button', onclick: onSyncClick }),
+      h('button', { class: 'btn btn-primary btn-sm btn-new', type: 'button', 'aria-label': 'New set', onclick: () => show('edit', {}) },
+        icon('plus', 18), h('span', { class: 'hide-xs', text: 'New set' }))));
+  document.body.prepend(bar);
+}
+
+/* ================= home ================= */
+function setTile(s, example) {
+  const p = progressOf(s);
+  const n = starCount(s);
+  return h('button', { class: 'tile', type: 'button', onclick: () => show('set', { setId: s.id }) },
+    h('div', { class: 'tile-head' },
+      h('span', { class: 'tile-title', text: s.title }),
+      example ? h('span', { class: 'chip', text: 'Example' }) : null),
+    h('div', { class: 'tile-body ruled' },
+      h('div', { class: 'tile-count', text: plural(s.cards.length, 'term') }),
+      h('div', { class: 'tile-meta', text: s.studied ? 'Studied ' + ago(s.studied) : 'Not studied yet' }),
+      n ? h('div', { class: 'tile-meta is-star' }, icon('star', 14), `${n} starred`) : null),
+    h('div', { class: 'tile-foot' },
+      meter(p),
+      h('span', { class: 'tile-pct', text: p.total ? Math.round((p.mastered / p.total) * 100) + '% mastered' : '' })));
+}
+function emptyState() {
+  return h('section', { class: 'empty' },
+    h('div', null,
+      h('h2', { text: 'Make your first study set' }),
+      h('p', { text: 'Type your terms and definitions, or paste a whole list at once. Then study them with flashcards, learn, test and match. Every mode is free, with no limits.' }),
+      h('div', { class: 'empty-actions' },
+        h('button', { class: 'btn btn-primary', type: 'button', onclick: () => show('edit', {}) }, icon('plus', 18), 'Create a set'),
+        h('button', { class: 'btn', type: 'button', onclick: () => show('edit', { openImport: true }) }, icon('clipboard', 18), 'Paste a list')),
+      h('ul', { class: 'mode-list' }, ...MODES.map(m => h('li', null,
+        h('span', { class: 'mi' }, icon(m.icon, 16)),
+        h('span', null, h('b', { text: m.name }), ' ', m.hint))))),
+    h('div', { class: 'empty-example' },
+      setTile(exampleSet, true),
+      h('p', { class: 'muted small', text: 'Open the example to try every study mode.' })));
+}
+/* ---------- backups (only when the page runs on its own, outside Claude) ---------- */
+const STANDALONE = !(window.claude && typeof window.claude.use === 'function');
+function backupSets() {
+  const sets = allSets();
+  const data = { app: 'three-by-five', version: 1, saved: new Date().toISOString(), sets };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+  const a = h('a', { href: url, download: `three-by-five-backup-${new Date().toISOString().slice(0, 10)}.json` });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast(`Saved a backup of ${plural(sets.length, 'set')}`);
+}
+function restoreSets(file) {
+  const bad = () => toast("That file isn't a Three by Five backup.");
+  const reader = new FileReader();
+  reader.onerror = bad;
+  reader.onload = () => {
+    let data;
+    try { data = JSON.parse(String(reader.result)); } catch (e) { bad(); return; }
+    const list = Array.isArray(data) ? data : (data && Array.isArray(data.sets) ? data.sets : null);
+    if (!list) { bad(); return; }
+    let loaded = 0, kept = 0;
+    for (const raw of list) {
+      if (!raw || typeof raw.id !== 'string' || raw.id === EXAMPLE_ID || !Array.isArray(raw.cards)) continue;
+      const s = cleanSet(raw.id, raw);
+      const here = Store.sets.get(s.id);
+      if (here && (here.rev || 0) >= (s.rev || 0)) { kept++; continue; }
+      Store.sets.set(s.id, s);
+      persist(s.id, 0);
+      loaded++;
+    }
+    if (!loaded && !kept) { bad(); return; }
+    emit();
+    toast(loaded ? `Loaded ${plural(loaded, 'set')}` : 'You already have the newest copy of those sets.');
+  };
+  reader.readAsText(file);
+}
+function backupRow(n) {
+  const input = h('input', {
+    type: 'file', id: 'backup-file', accept: '.json,application/json', class: 'sr-only', tabindex: '-1', 'aria-hidden': 'true',
+    onchange: (e) => { const f = e.target.files && e.target.files[0]; if (f) restoreSets(f); e.target.value = ''; },
+  });
+  return h('div', { class: 'backup' },
+    h('p', { text: n
+      ? 'Your sets are saved in this browser only. Save a backup file to keep them safe or move them to another computer.'
+      : 'Have a backup file? Load it to bring your sets back.' }),
+    h('div', { class: 'backup-btns' },
+      n ? h('button', { class: 'btn btn-sm', type: 'button', onclick: backupSets }, 'Save a backup') : null,
+      h('button', { class: 'btn btn-sm', type: 'button', onclick: () => input.click() }, 'Load a backup'),
+      input));
+}
+
+VIEWS.home = function HomeView() {
+  const root = h('div', { class: 'home' });
+  const gridWrap = h('div');
+  if (view.query == null) view.query = '';
+  const loading = () => Store.mode === 'connecting' || (Store.mode === 'cloud' && !Store.loaded);
+  function drawGrid() {
+    const sets = allSets();
+    if (loading()) {
+      gridWrap.replaceChildren(
+        h('div', { class: 'set-grid', 'aria-hidden': 'true' }, ...[70, 55, 80].map(w => h('div', { class: 'tile skel' },
+          h('div', { class: 'tile-head' }, h('span', { class: 'bar', style: `width:${w}%` })),
+          h('div', { class: 'tile-body ruled' }),
+          h('div', { class: 'tile-foot' }, h('span', { class: 'bar', style: 'width:100%;height:6px' }))))),
+        h('p', { class: 'muted small loading-note', text: 'Loading your sets…' }));
+      return;
+    }
+    if (!sets.length) { gridWrap.replaceChildren(emptyState()); return; }
+    const q = view.query.trim().toLowerCase();
+    let list = q
+      ? sets.filter(s => s.title.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q) || s.cards.some(c => c.t.toLowerCase().includes(q)))
+      : sets;
+    list = list.slice().sort(prefs.sort === 'az'
+      ? (a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base', numeric: true })
+      : (a, b) => recency(b) - recency(a));
+    const parts = [];
+    if (!list.length) parts.push(h('p', { class: 'muted no-match', text: `No sets match “${view.query.trim()}”.` }));
+    else parts.push(h('div', { class: 'set-grid' }, ...list.map(s => setTile(s, false)),
+      q ? null : h('button', { class: 'tile tile-new', type: 'button', onclick: () => show('edit', {}) }, icon('plus', 20), 'New set')));
+    parts.push(h('div', { class: 'home-foot' },
+      h('button', { class: 'link-btn', type: 'button', onclick: () => show('set', { setId: EXAMPLE_ID }) }, 'Open the example set')));
+    gridWrap.replaceChildren(...parts);
+  }
+  function draw() {
+    const sets = allSets();
+    const parts = [];
+    const stranded = Store.mode === 'cloud' && Store.loaded ? Store.stranded.filter(s => !Store.sets.has(s.id)) : [];
+    if (stranded.length && !view.hideStranded) {
+      parts.push(h('div', { class: 'banner' },
+        h('p', null, h('b', { text: `${plural(stranded.length, 'set')} saved only in this browser. ` }), 'Add them to your account so they show up on every device.'),
+        h('div', { class: 'banner-btns' },
+          h('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: moveStranded }, 'Add to my account'),
+          h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: () => { view.hideStranded = true; draw(); } }, 'Not now'))));
+    }
+    const head = h('div', { class: 'home-head' },
+      h('h1', { class: 'page-title' }, 'Your sets', sets.length && !loading() ? h('span', { class: 'count', text: String(sets.length) }) : null));
+    if (sets.length > 1 && !loading()) {
+      head.append(h('div', { class: 'home-tools' },
+        h('div', { class: 'search' }, icon('search', 18),
+          h('input', { class: 'field', id: 'set-search', 'data-fk': 'search', type: 'search', placeholder: 'Search your sets', 'aria-label': 'Search your sets', value: view.query, oninput: (e) => { view.query = e.target.value; drawGrid(); } })),
+        seg([{ v: 'recent', label: 'Recent' }, { v: 'az', label: 'A to Z' }], prefs.sort, (v) => { prefs.sort = v; savePrefs(); drawGrid(); }, { label: 'Sort sets' })));
+    }
+    parts.push(head, gridWrap);
+    if (STANDALONE && !loading()) parts.push(backupRow(sets.length));
+    root.replaceChildren(...parts);
+    drawGrid();
+  }
+  view.refresh = () => restoreFocus(root, draw);
+  draw();
+  return root;
+};
+
+/* ================= set page ================= */
+function starButton(set, cardId, extraCls = '') {
+  const on = set.stars.includes(cardId);
+  const b = h('button', {
+    class: 'star-btn ' + extraCls, type: 'button', 'data-fk': 'star-' + cardId,
+    'aria-pressed': String(on), 'aria-label': on ? 'Unstar this term' : 'Star this term', title: on ? 'Unstar' : 'Star',
+  }, icon('star', 20));
+  b.addEventListener('pointerdown', (e) => e.stopPropagation());
+  b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const now = toggleStar(set.id, cardId);
+    b.setAttribute('aria-pressed', String(now));
+    b.setAttribute('aria-label', now ? 'Unstar this term' : 'Star this term');
+    b.title = now ? 'Unstar' : 'Star';
+    if (b.onStarChange) b.onStarChange(now);
+  });
+  return b;
+}
+function studyHeader(set, active) {
+  return h('div', { class: 'study-head' },
+    h('button', { class: 'crumb', type: 'button', onclick: () => show('set', { setId: set.id }) }, icon('back', 18), h('span', { text: set.title })),
+    h('nav', { class: 'seg mode-tabs', 'aria-label': 'Study modes' }, ...MODES.map(m => h('button', {
+      type: 'button', 'aria-current': m.view === active ? 'page' : null,
+      onclick: () => { if (m.view !== active) show(m.view, { setId: set.id }); },
+    }, m.short))));
+}
+function saveExampleCopy() {
+  const ex = exampleSet;
+  const map = new Map();
+  const cards = ex.cards.map(c => { const id = rid('c'); map.set(c.id, id); return { id, t: c.t, d: c.d }; });
+  const s = createSet({ title: ex.title, desc: '', cards });
+  changeSet(s.id, (st) => {
+    for (const k of Object.keys(ex.learn)) if (map.has(k)) st.learn[map.get(k)] = ex.learn[k];
+    st.stars = ex.stars.filter(x => map.has(x)).map(x => map.get(x));
+    st.matchBest = ex.matchBest; st.lastTest = ex.lastTest; st.studied = ex.studied;
+  }, { quiet: true, delay: 0 });
+  exampleSet = makeExample();
+  toast('Saved a copy to your sets');
+  show('set', { setId: s.id });
+}
+async function resetProgress(s) {
+  const ok = await confirmBox({ title: 'Reset progress for this set?', body: 'This clears your Learn progress, best Match time and last test score. Your stars stay.', ok: 'Reset progress', danger: true });
+  if (!ok) return;
+  changeSet(s.id, (st) => { st.learn = {}; st.matchBest = 0; st.lastTest = null; });
+  toast('Progress reset');
+}
+async function deleteSetFlow(s) {
+  const ok = await confirmBox({ title: `Delete “${s.title}”?`, body: `This deletes the set and its ${plural(s.cards.length, 'term')}. You can't undo this.`, ok: 'Delete set', danger: true });
+  if (!ok) return;
+  removeSet(s.id);
+  show('home');
+  toast('Set deleted');
+}
+function sharePanel(s) {
+  const text = exportText(s);
+  const ta = h('textarea', { class: 'field mono', id: 'share-text', rows: Math.min(8, s.cards.length + 1), readOnly: true, value: text, 'aria-label': 'Set as text' });
+  return h('section', { class: 'tool-panel' },
+    h('div', null,
+      h('h3', { class: 'h3', text: 'Copy this set as text' }),
+      h('p', { class: 'muted small', text: 'Each line is a term, a tab, then the definition. Send it to a friend, and they can add it with “Paste a list” when they make a set here. Most flashcard sites can import it too.' })),
+    ta,
+    h('div', { class: 'panel-actions' },
+      h('button', { class: 'btn btn-primary', type: 'button', onclick: () => copyText(text, ta, `Copied ${plural(s.cards.length, 'card')}`) }, icon('copy', 16), 'Copy text')));
+}
+VIEWS.set = function SetView() {
+  if (!getSet(view.setId)) return missingSet();
+  const root = h('div', { class: 'set-page' });
+  if (!view.filter) view.filter = 'all';
+  function draw() {
+    const s = getSet(view.setId);
+    if (!s) { show('home'); return; }
+    const isEx = s.id === EXAMPLE_ID;
+    const p = progressOf(s);
+    const nStar = starCount(s);
+    if (view.filter === 'starred' && !nStar) view.filter = 'all';
+    const parts = [];
+    parts.push(h('button', { class: 'crumb', type: 'button', onclick: () => show('home') }, icon('back', 18), h('span', { text: 'Your sets' })));
+    if (isEx) {
+      parts.push(h('div', { class: 'banner' },
+        h('p', null, h('b', { text: 'This is an example set. ' }), 'Progress here resets when you leave the page. Save a copy to keep your progress and edit the cards.'),
+        h('div', { class: 'banner-btns' }, h('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: saveExampleCopy }, 'Save a copy'))));
+    }
+    parts.push(h('header', null,
+      h('h1', { class: 'set-title', text: s.title }),
+      s.desc ? h('p', { class: 'set-desc', text: s.desc }) : null,
+      h('p', { class: 'set-meta', text: [plural(s.cards.length, 'term'), s.updated ? 'edited ' + ago(s.updated) : null].filter(Boolean).join(' · ') })));
+    parts.push(h('nav', { class: 'modes', 'aria-label': 'Study modes' }, ...MODES.map(m => h('button', { class: 'mode', type: 'button', onclick: () => show(m.view, { setId: s.id }) },
+      h('span', { class: 'mi' }, icon(m.icon, 22)), h('b', { text: m.name }), h('small', { text: m.hint })))));
+    const testPct = s.lastTest ? Math.round((s.lastTest.score / s.lastTest.total) * 100) + '%' : null;
+    parts.push(h('section', { class: 'progress-panel', 'aria-label': 'Your progress' },
+      h('div', null,
+        h('div', { class: 'pp-head' }, h('span', { class: 'eyebrow', text: 'Learn progress' }), h('span', { class: 'pp-pct', text: p.total ? Math.round((p.mastered / p.total) * 100) + '% mastered' : '' })),
+        meter(p),
+        h('div', { class: 'legend' },
+          h('span', null, h('i', { class: 'lg-mastered' }), `Mastered ${p.mastered}`),
+          h('span', null, h('i', { class: 'lg-learning' }), `Learning ${p.learning}`),
+          h('span', null, h('i', { class: 'lg-new' }), `New ${p.fresh}`))),
+      h('div', { class: 'stats' },
+        h('div', { class: 'stat' }, h('b', { class: testPct ? null : 'none', text: testPct || 'Not yet' }), h('span', { text: 'Last test' })),
+        h('div', { class: 'stat' }, h('b', { class: s.matchBest ? null : 'none', text: s.matchBest ? secs(s.matchBest) + 's' : 'Not yet' }), h('span', { text: 'Best match' })))));
+    const actions = h('div', { class: 'actions' });
+    if (!isEx) actions.append(h('button', { class: 'btn btn-sm', type: 'button', onclick: () => show('edit', { setId: s.id }) }, icon('edit', 16), 'Edit'));
+    actions.append(h('button', { class: 'btn btn-sm', type: 'button', 'aria-expanded': String(!!view.share), onclick: () => { view.share = !view.share; draw(); } }, icon('copy', 16), 'Copy as text'));
+    actions.append(h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: () => resetProgress(s) }, icon('reset', 16), 'Reset progress'));
+    if (!isEx) actions.append(h('button', { class: 'btn btn-sm btn-ghost danger-text', type: 'button', onclick: () => deleteSetFlow(s) }, icon('trash', 16), 'Delete'));
+    parts.push(actions);
+    if (view.share) parts.push(sharePanel(s));
+    const starred = new Set(s.stars);
+    const shown = view.filter === 'starred' ? s.cards.filter(c => starred.has(c.id)) : s.cards;
+    parts.push(h('section', null,
+      h('div', { class: 'terms-head' },
+        h('h2', { class: 'h2', text: `Terms in this set (${s.cards.length})` }),
+        seg([{ v: 'all', label: 'All' }, { v: 'starred', label: `Starred (${nStar})`, disabled: !nStar }], view.filter, (v) => { view.filter = v; view.refresh(); }, { label: 'Show terms' })),
+      h('ol', { class: 'terms' }, ...shown.map(c => {
+        const b = starButton(s, c.id);
+        b.onStarChange = () => view.refresh();
+        return h('li', { class: 'term-row' }, h('div', { class: 't', text: c.t }), h('div', { class: 'd', text: c.d }), b);
+      }))));
+    root.replaceChildren(...parts);
+  }
+  view.refresh = () => restoreFocus(root, draw);
+  draw();
+  return root;
+};
+
+/* ================= create / edit ================= */
+const blankCard = () => ({ id: rid('c'), t: '', d: '' });
+const draftKey = (d) => JSON.stringify([d.title, d.desc, d.cards.map(c => [c.t, c.d])]);
+
+function findSep(line, st) {
+  if (st.term === 'tab') { const i = line.indexOf('\t'); return i < 0 ? null : { i, len: 1 }; }
+  if (st.term === 'colon') { const i = line.indexOf(':'); return i < 0 ? null : { i, len: 1 }; }
+  if (st.term === 'comma') { const i = line.indexOf(','); return i < 0 ? null : { i, len: 1 }; }
+  if (st.term === 'dash') { const m = /\s*(?:[–—]|-(?=\s))\s*/.exec(line); return m ? { i: m.index, len: m[0].length } : null; }
+  if (st.term === 'custom') {
+    if (!st.customTerm) return null;
+    const i = line.indexOf(st.customTerm);
+    return i < 0 ? null : { i, len: st.customTerm.length };
+  }
+  return null;
+}
+function parseList(text, st) {
+  let chunks;
+  if (st.card === 'semi') chunks = text.split(';');
+  else if (st.card === 'custom' && st.customCard) chunks = text.split(st.customCard);
+  else chunks = text.split(/\r?\n/);
+  const cards = [];
+  let skipped = 0;
+  for (const raw of chunks) {
+    const line = raw.replace(/\r/g, ' ');
+    if (!line.trim()) continue;
+    const m = findSep(line, st);
+    const t = m ? line.slice(0, m.i).trim() : '';
+    const d = m ? line.slice(m.i + m.len).trim() : '';
+    if (!t || !d) { skipped++; continue; }
+    cards.push({ t: t.slice(0, 2000), d: d.slice(0, 4000) });
+  }
+  return { cards, skipped };
+}
+function detectSep(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return null;
+  const share = (re) => lines.filter(l => re.test(l)).length / lines.length;
+  if (share(/\t/) >= 0.5) return 'tab';
+  if (share(/[–—]|\s-\s/) >= 0.5) return 'dash';
+  if (share(/:/) >= 0.5) return 'colon';
+  if (share(/,/) >= 0.5) return 'comma';
+  return null;
+}
+
+function importPanel(onAdd) {
+  const st = { term: 'tab', card: 'line', customTerm: '', customCard: '', picked: false };
+  const ta = h('textarea', {
+    class: 'field mono', id: 'import-text', rows: 7, spellcheck: false,
+    placeholder: 'Paste one card per line, like:\nphotosynthesis\tHow plants make food from sunlight\nmitosis\tCell division that makes two identical cells',
+  });
+  const termSeg = h('div');
+  const cardSeg = h('div');
+  const customTermIn = h('input', { class: 'field field-sm', id: 'import-custom-term', type: 'text', maxlength: 10, placeholder: 'like =', 'aria-label': 'Custom separator between term and definition', hidden: true, oninput: (e) => { st.customTerm = e.target.value; update(); } });
+  const customCardIn = h('input', { class: 'field field-sm', id: 'import-custom-card', type: 'text', maxlength: 10, placeholder: 'like |', 'aria-label': 'Custom separator between cards', hidden: true, oninput: (e) => { st.customCard = e.target.value; update(); } });
+  const preview = h('div', { class: 'pv-wrap', 'aria-live': 'polite' });
+  const addBtn = h('button', { class: 'btn btn-primary', type: 'button', disabled: true }, 'Add cards');
+  function drawSegs() {
+    termSeg.replaceChildren(seg([
+      { v: 'tab', label: 'Tab' }, { v: 'colon', label: 'Colon' }, { v: 'dash', label: 'Dash' }, { v: 'comma', label: 'Comma' }, { v: 'custom', label: 'Custom' },
+    ], st.term, (v) => { st.term = v; st.picked = true; customTermIn.hidden = v !== 'custom'; update(); }, { label: 'Between term and definition' }));
+    cardSeg.replaceChildren(seg([
+      { v: 'line', label: 'New line' }, { v: 'semi', label: 'Semicolon' }, { v: 'custom', label: 'Custom' },
+    ], st.card, (v) => { st.card = v; customCardIn.hidden = v !== 'custom'; update(); }, { label: 'Between cards' }));
+  }
+  function update() {
+    if (!st.picked && st.card === 'line') {
+      const g = detectSep(ta.value);
+      if (g && g !== st.term) { st.term = g; drawSegs(); }
+    }
+    const { cards, skipped } = parseList(ta.value, st);
+    addBtn.disabled = !cards.length;
+    addBtn.textContent = cards.length ? `Add ${plural(cards.length, 'card')}` : 'Add cards';
+    const parts = [];
+    if (cards.length) {
+      parts.push(h('table', { class: 'pv' }, h('tbody', null, ...cards.slice(0, 3).map(c => h('tr', null, h('td', { class: 'hand', text: c.t }), h('td', { text: c.d }))))));
+    }
+    const notes = [];
+    if (cards.length > 3) notes.push(`and ${cards.length - 3} more`);
+    if (skipped) notes.push(`${plural(skipped, 'line')} skipped because no separator was found`);
+    if (notes.length) parts.push(h('p', { class: 'muted small', text: notes.join(' · ') }));
+    preview.replaceChildren(...parts);
+  }
+  ta.addEventListener('input', update);
+  addBtn.addEventListener('click', () => {
+    const { cards } = parseList(ta.value, st);
+    if (!cards.length) return;
+    onAdd(cards);
+    toast(`Added ${plural(cards.length, 'card')}`);
+    ta.value = '';
+    update();
+  });
+  drawSegs();
+  update();
+  const panel = h('section', { class: 'tool-panel' },
+    h('div', null,
+      h('h3', { class: 'h3', text: 'Paste a list' }),
+      h('p', { class: 'muted small', text: 'Copy rows from a spreadsheet, a document or another flashcard site. Put each card on its own line.' })),
+    h('label', { class: 'sr-only', for: 'import-text', text: 'List to add' }), ta,
+    h('div', { class: 'sep-grid' },
+      h('div', { class: 'sep-row' }, h('span', { class: 'label', text: 'Between term and definition' }), h('div', { class: 'sep-ctrl' }, termSeg, customTermIn)),
+      h('div', { class: 'sep-row' }, h('span', { class: 'label', text: 'Between cards' }), h('div', { class: 'sep-ctrl' }, cardSeg, customCardIn))),
+    preview,
+    h('div', { class: 'panel-actions' }, addBtn));
+  panel.focusInput = () => ta.focus();
+  return panel;
+}
+
+const SAMPLE_OFF = new Set(['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed']);
+function sampleErrorText(code) {
+  switch (code) {
+    case 'not_granted': return 'Claude was not allowed to run on this page, so this tool is off until you reload.';
+    case 'sampling_disabled': case 'not_declared': case 'capability_disabled': case 'capability_removed': return 'Making cards with Claude is not available here.';
+    case 'rate_limited': return 'You have hit a usage limit. Wait a bit, then try again.';
+    case 'session_expired': return 'Your Claude session expired. Sign in again, then try again.';
+    case 'prompt_too_large': return 'Those notes are too long. Try one section at a time.';
+    case 'refused': return 'Claude could not make cards from these notes. Try different notes.';
+    case 'empty_completion': return 'No cards came back. Try notes with clear terms and facts.';
+    default: return 'Something went wrong. Try again in a moment.';
+  }
+}
+function notesPrompt(notes) {
+  return [
+    "You turn a student's notes into study flashcards.",
+    'Make one card for each key term, person, place, date, event, formula or idea in the notes.',
+    'Rules:',
+    '- "term": short, 1 to 6 words (the word, name, date or idea).',
+    '- "definition": one clear phrase or sentence under 25 words, based only on the notes.',
+    '- Write in the same language as the notes. Skip filler. No duplicate cards. At most 60 cards.',
+    '- Reply with one JSON object per line and nothing else: no numbering, no code fences, no other text.',
+    'Example line:',
+    '{"term":"Mitochondria","definition":"Organelle that turns food into energy (ATP) for the cell"}',
+    '',
+    'Notes:',
+    '"""',
+    notes.slice(0, 30000),
+    '"""',
+  ].join('\n');
+}
+function notesPanel(onCards) {
+  const ta = h('textarea', { class: 'field', id: 'notes-text', rows: 8, maxlength: 30000, placeholder: 'Paste class notes, a study guide or part of a textbook chapter.' });
+  const status = h('p', { class: 'panel-status', 'aria-live': 'polite' });
+  const go = h('button', { class: 'btn btn-primary', type: 'button' }, icon('notes', 16), 'Make cards');
+  const stop = h('button', { class: 'btn btn-ghost', type: 'button', hidden: true }, 'Stop');
+  let ctl = null;
+  go.addEventListener('click', async () => {
+    const notes = ta.value.trim();
+    status.className = 'panel-status';
+    if (notes.length < 40) { status.textContent = 'Paste a little more text first, at least a few sentences.'; return; }
+    if (!sampleFn) { status.textContent = sampleErrorText('capability_disabled'); return; }
+    ctl = new AbortController();
+    go.disabled = true;
+    stop.hidden = false;
+    status.textContent = 'Claude is reading your notes. This can take up to a minute.';
+    let pending = '', added = 0;
+    const take = (line) => {
+      line = line.trim().replace(/,\s*$/, '');
+      if (!line || (line[0] !== '{' && line[0] !== '[')) return;
+      let v;
+      try { v = JSON.parse(line); } catch (e) { return; }
+      const arr = (Array.isArray(v) ? v : [v])
+        .filter(o => o && typeof o.term === 'string' && typeof o.definition === 'string' && o.term.trim() && o.definition.trim())
+        .map(o => ({ t: o.term.trim().slice(0, 300), d: o.definition.trim().slice(0, 1000) }));
+      if (!arr.length) return;
+      onCards(arr);
+      added += arr.length;
+      status.textContent = `Added ${plural(added, 'card')} so far…`;
+    };
+    try {
+      await sampleFn(notesPrompt(notes), {
+        signal: ctl.signal,
+        cache: false,
+        onText: ({ delta }) => {
+          const lines = (pending + delta).split('\n');
+          pending = lines.pop();
+          lines.forEach(take);
+        },
+      });
+      take(pending);
+      pending = '';
+      status.textContent = added
+        ? `Done. Added ${plural(added, 'card')} below. Read them over before you save.`
+        : 'No cards came back. Try notes with clear terms and facts.';
+    } catch (e) {
+      const code = e && e.code;
+      if (code === 'cancelled') {
+        status.textContent = added ? `Stopped. Kept ${plural(added, 'card')}.` : 'Stopped.';
+      } else {
+        status.textContent = sampleErrorText(code);
+        status.className = 'panel-status err';
+        if (SAMPLE_OFF.has(code)) { go.hidden = true; }
+      }
+    } finally {
+      go.disabled = false;
+      stop.hidden = true;
+      ctl = null;
+    }
+  });
+  stop.addEventListener('click', () => { if (ctl) ctl.abort(); });
+  const panel = h('section', { class: 'tool-panel' },
+    h('div', null,
+      h('h3', { class: 'h3', text: 'Make cards from notes' }),
+      h('p', { class: 'muted small', text: 'Claude picks out the key terms and writes a short definition for each. It runs on your own Claude account. You can edit every card before you save.' })),
+    h('label', { class: 'sr-only', for: 'notes-text', text: 'Your notes' }), ta,
+    h('div', { class: 'panel-actions' }, go, stop),
+    status);
+  panel.focusInput = () => ta.focus();
+  return panel;
+}
+
+VIEWS.edit = function EditView() {
+  const editing = view.setId ? getSet(view.setId) : null;
+  if (view.setId && (!editing || view.setId === EXAMPLE_ID)) return missingSet();
+  if (!view.draft) {
+    view.draft = editing
+      ? { title: editing.title, desc: editing.desc, cards: editing.cards.map(c => ({ id: c.id, t: c.t, d: c.d })) }
+      : { title: '', desc: '', cards: [blankCard(), blankCard(), blankCard()] };
+    if (!view.draft.cards.length) view.draft.cards.push(blankCard());
+    view.original = draftKey(view.draft);
+  }
+  if (view.openImport) { view.panel = 'import'; view.openImport = false; view.focusPanel = true; }
+  const d = view.draft;
+  let importEl = null, notesEl = null;
+  const goBack = () => (editing ? show('set', { setId: editing.id }) : show('home'));
+  const leave = async () => {
+    if (draftKey(d) !== view.original) {
+      const ok = await confirmBox({ title: 'Discard your changes?', body: editing ? 'Your edits to this set will be lost.' : 'This new set will not be saved.', ok: 'Discard', cancel: 'Keep editing', danger: true });
+      if (!ok) return;
+    }
+    goBack();
+  };
+
+  const titleErr = h('p', { class: 'field-err', hidden: true, text: 'Give your set a title.' });
+  const titleIn = h('input', { class: 'field title-input', id: 'set-title', type: 'text', value: d.title, maxlength: 200, placeholder: 'Like “Biology chapter 3”', oninput: (e) => { d.title = e.target.value; titleErr.hidden = true; } });
+  const descIn = h('textarea', { class: 'field', id: 'set-desc', rows: 2, value: d.desc, maxlength: 2000, placeholder: 'Optional', oninput: (e) => { d.desc = e.target.value; } });
+  const toolsRow = h('div', { class: 'tools' });
+  const panelSlot = h('div');
+  const list = h('ol', { class: 'rows' });
+  const countEl = h('span', { class: 'muted small' });
+  const formErr = h('p', { class: 'form-err', role: 'alert' });
+
+  function drawTools() {
+    const toggle = (name) => { view.panel = view.panel === name ? null : name; view.focusPanel = !!view.panel; drawTools(); drawPanel(); };
+    toolsRow.replaceChildren(...[
+      h('button', { class: 'btn btn-sm', type: 'button', 'aria-expanded': String(view.panel === 'import'), onclick: () => toggle('import') }, icon('clipboard', 16), 'Paste a list'),
+      sampleFn ? h('button', { class: 'btn btn-sm', type: 'button', 'aria-expanded': String(view.panel === 'notes'), onclick: () => toggle('notes') }, icon('notes', 16), 'Make cards from notes') : null,
+      h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: () => { for (const c of d.cards) { const t = c.t; c.t = c.d; c.d = t; } drawRows(); toast('Swapped terms and definitions'); } }, icon('swap', 16), 'Swap sides'),
+    ].filter(Boolean));
+  }
+  function drawPanel() {
+    let el = null;
+    if (view.panel === 'import') el = importEl || (importEl = importPanel(appendCards));
+    else if (view.panel === 'notes' && sampleFn) el = notesEl || (notesEl = notesPanel(appendCards));
+    if (el) panelSlot.replaceChildren(el); else panelSlot.replaceChildren();
+    if (el && view.focusPanel) { view.focusPanel = false; setTimeout(() => el.focusInput && el.focusInput(), 30); }
+  }
+  function updateCount() {
+    const n = d.cards.filter(c => c.t.trim() || c.d.trim()).length;
+    countEl.textContent = plural(n, 'card');
+  }
+  function appendCards(arr) {
+    while (d.cards.length && !d.cards[d.cards.length - 1].t.trim() && !d.cards[d.cards.length - 1].d.trim()) d.cards.pop();
+    for (const c of arr) d.cards.push({ id: rid('c'), t: c.t, d: c.d });
+    if (!d.cards.length) d.cards.push(blankCard());
+    formErr.textContent = '';
+    drawRows();
+  }
+  function addCard() {
+    d.cards.push(blankCard());
+    drawRows(d.cards.length - 1, 't');
+    const last = list.lastElementChild;
+    if (last) last.scrollIntoView({ block: 'nearest' });
+  }
+  function rowEl(c, i) {
+    const tId = 'term-' + c.id, dId = 'def-' + c.id;
+    const err = h('p', { class: 'row-err', hidden: true });
+    const row = h('li', { class: 'row' });
+    const clearErr = () => { row.classList.remove('has-err'); err.hidden = true; formErr.textContent = ''; };
+    const tIn = h('textarea', {
+      class: 'field in-t', id: tId, rows: 1, value: c.t, maxlength: 2000, placeholder: 'Enter a term',
+      oninput: (e) => { c.t = e.target.value; grow(e.target); clearErr(); updateCount(); },
+      onkeydown: (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); dIn.focus(); } },
+    });
+    const dIn = h('textarea', {
+      class: 'field in-d', id: dId, rows: 1, value: c.d, maxlength: 4000, placeholder: 'Enter the definition',
+      oninput: (e) => { c.d = e.target.value; grow(e.target); clearErr(); updateCount(); },
+      onkeydown: (e) => {
+        if (e.key === 'Tab' && !e.shiftKey && i === d.cards.length - 1 && (c.t.trim() || c.d.trim())) { e.preventDefault(); addCard(); }
+      },
+    });
+    const del = h('button', {
+      class: 'btn btn-ghost btn-icon row-del', type: 'button', 'aria-label': `Delete card ${i + 1}`, title: 'Delete card',
+      onclick: () => {
+        if (d.cards.length <= 1) { c.t = ''; c.d = ''; drawRows(0, 't'); return; }
+        d.cards.splice(i, 1);
+        drawRows(Math.min(i, d.cards.length - 1), 't');
+      },
+    }, icon('trash', 18));
+    append(row, [
+      h('span', { class: 'row-num', 'aria-hidden': 'true', text: String(i + 1) }),
+      h('div', { class: 'row-f row-ft' }, tIn, h('label', { class: 'row-label', for: tId, text: 'Term' })),
+      h('div', { class: 'row-f row-fd' }, dIn, h('label', { class: 'row-label', for: dId, text: 'Definition' })),
+      del, err,
+    ]);
+    row.showErr = (msg, field) => { row.classList.add('has-err'); err.textContent = msg; err.hidden = false; return field === 'd' ? dIn : tIn; };
+    return row;
+  }
+  function drawRows(focusIdx, field) {
+    list.replaceChildren(...d.cards.map((c, i) => rowEl(c, i)));
+    updateCount();
+    requestAnimationFrame(() => list.querySelectorAll('textarea').forEach(grow));
+    if (focusIdx != null) {
+      const r = list.children[focusIdx];
+      const f = r && r.querySelector(field === 'd' ? '.in-d' : '.in-t');
+      if (f) f.focus();
+    }
+  }
+  function save() {
+    formErr.textContent = '';
+    titleErr.hidden = true;
+    const title = d.title.trim();
+    let firstBad = null;
+    if (!title) { titleErr.hidden = false; firstBad = titleIn; }
+    const kept = [];
+    d.cards.forEach((c, i) => {
+      const t = c.t.trim(), dd = c.d.trim();
+      if (!t && !dd) return;
+      if (!t || !dd) {
+        const f = list.children[i].showErr(t ? 'Add a definition, or delete this card.' : 'Add a term, or delete this card.', t ? 'd' : 't');
+        firstBad = firstBad || f;
+      }
+      kept.push({ id: c.id, t, d: dd });
+    });
+    if (!firstBad && kept.length < 2) {
+      formErr.textContent = kept.length ? 'Add at least one more card.' : 'Add at least 2 cards.';
+      const emptyRow = d.cards.findIndex(c => !c.t.trim());
+      if (emptyRow >= 0) firstBad = list.children[emptyRow].querySelector('.in-t');
+      else { addCard(); return; }
+    }
+    if (firstBad) {
+      if (!formErr.textContent) formErr.textContent = 'Fix the highlighted parts, then save.';
+      firstBad.focus();
+      firstBad.scrollIntoView({ block: 'center' });
+      return;
+    }
+    const seen = new Set();
+    for (const c of kept) { if (seen.has(c.id)) c.id = rid('c'); seen.add(c.id); }
+    const desc = d.desc.trim().slice(0, 2000);
+    if (editing) {
+      changeSet(editing.id, (s) => {
+        s.title = title.slice(0, 300);
+        s.desc = desc;
+        s.cards = kept;
+        s.updated = Date.now();
+        const ids = new Set(kept.map(c => c.id));
+        s.stars = s.stars.filter(x => ids.has(x));
+        for (const k of Object.keys(s.learn)) if (!ids.has(k)) delete s.learn[k];
+      }, { delay: 0 });
+      show('set', { setId: editing.id });
+      toast('Saved');
+    } else {
+      const s = createSet({ title: title.slice(0, 300), desc, cards: kept });
+      show('set', { setId: s.id });
+      toast('Set created');
+    }
+  }
+
+  const saveBtn = h('button', { class: 'btn btn-primary', type: 'button', onclick: save }, editing ? 'Save changes' : 'Create set');
+  const root = h('div', { class: 'editor' },
+    h('div', null,
+      h('button', { class: 'crumb', type: 'button', onclick: leave }, icon('back', 18), h('span', { text: editing ? editing.title : 'Your sets' })),
+      h('h1', { class: 'page-title', text: editing ? 'Edit set' : 'Create a set' })),
+    h('section', { class: 'editor-top' },
+      h('label', { class: 'label', for: 'set-title', text: 'Title' }), titleIn, titleErr,
+      h('label', { class: 'label', for: 'set-desc', text: 'Description' }), descIn),
+    toolsRow,
+    panelSlot,
+    h('div', { class: 'rows-head' }, h('h2', { class: 'h2', text: 'Cards' }), countEl),
+    list,
+    h('button', { class: 'add-card', type: 'button', onclick: addCard }, icon('plus', 18), 'Add card'),
+    h('div', { class: 'savebar' }, formErr, h('div', { class: 'savebar-btns' },
+      h('button', { class: 'btn btn-ghost', type: 'button', onclick: leave }, 'Cancel'), saveBtn)));
+  drawTools();
+  drawPanel();
+  drawRows();
+  view.onSample = () => { drawTools(); drawPanel(); };
+  if (!editing && view.panel !== 'import') setTimeout(() => { if (titleIn.isConnected) titleIn.focus(); }, 30);
+  return root;
+};
+
+/* ================= flashcards ================= */
+VIEWS.flashcards = function FlashcardsView() {
+  const s0 = getSet(view.setId);
+  if (!s0) return missingSet();
+  const o = prefs.fc;
+  const root = h('div', { class: 'study' });
+  const optsBox = h('div', { class: 'opts', hidden: true });
+  const stage = h('div');
+  let S = null;
+  let suppressClick = false;
+
+  const cur = () => getSet(view.setId);
+  const cardById = (id) => { const s = cur(); return s ? s.cards.find(c => c.id === id) : null; };
+
+  function start(onlyIds) {
+    const s = cur();
+    if (!s) { show('home'); return; }
+    let ids = s.cards.map(c => c.id);
+    let note = '';
+    if (o.starred) {
+      const st = ids.filter(id => s.stars.includes(id));
+      if (st.length) ids = st; else note = 'No starred terms yet, so you are seeing every card.';
+    }
+    if (onlyIds) ids = ids.filter(id => onlyIds.includes(id));
+    if (o.shuffle) shuffle(ids);
+    S = { ids, i: 0, flipped: false, known: new Set(), learning: new Set(), hist: [], done: false, note, dir: 'fade' };
+    paint();
+  }
+  function markStudied() { changeSet(view.setId, (st) => { st.studied = Date.now(); }, { quiet: true, delay: 4000 }); }
+  function flip() {
+    if (!S || S.done) return;
+    S.flipped = !S.flipped;
+    const el = stage.querySelector('.flash');
+    if (el) {
+      el.classList.toggle('flipped', S.flipped);
+      el.setAttribute('aria-label', faceLabel());
+    }
+  }
+  function faceLabel() {
+    const c = cardById(S.ids[S.i]);
+    if (!c) return '';
+    const termFirst = o.front === 'term';
+    const showTerm = termFirst !== S.flipped;
+    return `${showTerm ? 'Term' : 'Definition'}: ${showTerm ? c.t : c.d}. Press Space to flip.`;
+  }
+  function sort(known) {
+    if (!S || S.done) return;
+    const id = S.ids[S.i];
+    S.hist.push({ i: S.i, id });
+    (known ? S.known : S.learning).add(id);
+    (known ? S.learning : S.known).delete(id);
+    S.i++;
+    S.flipped = false;
+    S.dir = known ? 'right' : 'left';
+    if (S.i >= S.ids.length) S.done = true;
+    markStudied();
+    paint();
+  }
+  function undo() {
+    const last = S && S.hist.pop();
+    if (!last) return;
+    S.known.delete(last.id);
+    S.learning.delete(last.id);
+    S.i = last.i;
+    S.done = false;
+    S.flipped = false;
+    S.dir = 'fade';
+    paint();
+  }
+  function step(delta) {
+    if (!S) return;
+    const ni = S.i + delta;
+    if (ni < 0) return;
+    if (ni >= S.ids.length) { S.done = true; markStudied(); paint(); return; }
+    S.i = ni;
+    S.flipped = false;
+    S.dir = delta > 0 ? 'next' : 'prev';
+    paint();
+  }
+
+  function cardView(c) {
+    const termFirst = o.front === 'term';
+    const front = termFirst ? { label: 'Term', text: c.t } : { label: 'Definition', text: c.d };
+    const back = termFirst ? { label: 'Definition', text: c.d } : { label: 'Term', text: c.t };
+    const face = (side, cls) => h('div', { class: 'face ' + cls, 'aria-hidden': 'true' },
+      h('div', { class: 'face-head' }, h('span', { class: 'eyebrow', text: side.label })),
+      h('div', { class: 'face-body ruled' }, h('div', { class: 'face-text ' + sizeClass(side.text), text: side.text })));
+    const card = h('div', { class: 'flash enter-' + S.dir + (S.flipped ? ' flipped' : ''), role: 'button', tabindex: '0', 'aria-label': faceLabel() },
+      h('div', { class: 'flash-inner' }, face(front, 'front'), face(back, 'back')));
+    const tools = h('div', { class: 'card-tools' });
+    if (canSpeak) {
+      tools.append(h('button', {
+        class: 'star-btn', type: 'button', 'aria-label': 'Read aloud', title: 'Read aloud',
+        onclick: (e) => { e.stopPropagation(); const termShown = (o.front === 'term') !== S.flipped; speak(termShown ? c.t : c.d); },
+      }, icon('speak', 20)));
+    }
+    tools.append(starButton(cur(), c.id));
+    const wrap = h('div', { class: 'flash-wrap' }, card, tools);
+
+    let sx = 0, sy = 0, dragging = false, moved = false, pid = null;
+    card.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      sx = e.clientX; sy = e.clientY; dragging = true; moved = false; pid = e.pointerId;
+    });
+    card.addEventListener('pointermove', (e) => {
+      if (!dragging || e.pointerId !== pid) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if (!moved && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+        moved = true;
+        try { card.setPointerCapture(pid); } catch (err) { /* ignore */ }
+        card.classList.add('dragging');
+        wrap.classList.add('dragging');
+      }
+      if (moved) {
+        card.style.transform = `translateX(${dx}px) rotate(${dx / 28}deg)`;
+        card.dataset.swipe = o.track ? (dx > 70 ? 'right' : dx < -70 ? 'left' : '') : '';
+      }
+    });
+    const endDrag = (e, cancel) => {
+      if (!dragging) return;
+      dragging = false;
+      card.classList.remove('dragging');
+      wrap.classList.remove('dragging');
+      if (!moved) return;
+      const dx = e.clientX - sx;
+      card.style.transform = '';
+      delete card.dataset.swipe;
+      suppressClick = true;
+      setTimeout(() => { suppressClick = false; }, 60);
+      if (cancel || Math.abs(dx) < 80) return;
+      if (o.track) sort(dx > 0); else step(dx < 0 ? 1 : -1);
+    };
+    card.addEventListener('pointerup', (e) => endDrag(e, false));
+    card.addEventListener('pointercancel', (e) => endDrag(e, true));
+    card.addEventListener('click', () => { if (!suppressClick) flip(); });
+    return wrap;
+  }
+
+  function results() {
+    const total = S.ids.length;
+    if (o.track) {
+      const k = S.known.size, l = S.learning.size;
+      const p = { total, mastered: k, learning: 0, fresh: total - k };
+      return h('div', { class: 'results enter-fade' },
+        h('p', { class: 'eyebrow', text: 'Round complete' }),
+        h('h2', { class: 'res-title', text: l ? `You know ${k} of ${total} cards` : `You know all ${plural(total, 'card')}` }),
+        h('div', { class: 'res-meter' }, meter(p)),
+        h('p', { class: 'muted', text: l ? `Keep going with the ${plural(l, 'card')} you are still learning.` : 'Nice work. Try Learn or a practice test next.' }),
+        h('div', { class: 'res-actions' },
+          l ? h('button', { class: 'btn btn-primary', type: 'button', onclick: () => start([...S.learning]) }, `Review ${plural(l, 'card')}`)
+            : h('button', { class: 'btn btn-primary', type: 'button', onclick: () => show('learn', { setId: view.setId }) }, 'Go to Learn'),
+          h('button', { class: 'btn', type: 'button', onclick: () => start() }, icon('reset', 16), 'Restart all cards')));
+    }
+    return h('div', { class: 'results enter-fade' },
+      h('h2', { class: 'res-title', text: 'You reached the end of the deck' }),
+      h('p', { class: 'muted', text: `That was all ${plural(total, 'card')}.` }),
+      h('div', { class: 'res-actions' },
+        h('button', { class: 'btn btn-primary', type: 'button', onclick: () => start() }, icon('reset', 16), 'Start over'),
+        h('button', { class: 'btn', type: 'button', onclick: () => show('learn', { setId: view.setId }) }, 'Go to Learn')));
+  }
+
+  function paint() {
+    const s = cur();
+    if (!s) { show('home'); return; }
+    const total = S.ids.length;
+    const parts = [];
+    if (S.note) parts.push(h('p', { class: 'note', text: S.note }));
+    parts.push(h('div', { class: 'thin', 'aria-hidden': 'true' }, h('span', { style: `width:${total ? (Math.min(S.i, total) / total) * 100 : 0}%` })));
+    if (!total) {
+      parts.push(h('div', { class: 'results' }, h('p', { text: 'There are no cards to show.' })));
+      stage.replaceChildren(...parts);
+      return;
+    }
+    if (S.done) {
+      parts.push(results());
+      stage.replaceChildren(...parts);
+      return;
+    }
+    const c = cardById(S.ids[S.i]);
+    if (!c) { S.ids.splice(S.i, 1); if (S.i >= S.ids.length) S.done = true; paint(); return; }
+    parts.push(cardView(c));
+    const counter = h('span', { class: 'counter', 'aria-live': 'polite', text: `${S.i + 1} / ${total}` });
+    if (o.track) {
+      parts.push(h('div', { class: 'fc-controls' },
+        h('button', { class: 'btn btn-learning', type: 'button', onclick: () => sort(false) }, h('span', { class: 'count', text: String(S.learning.size) }), 'Still learning'),
+        counter,
+        h('button', { class: 'btn btn-know', type: 'button', onclick: () => sort(true) }, 'Know it', h('span', { class: 'count', text: String(S.known.size) }))));
+    } else {
+      parts.push(h('div', { class: 'fc-controls' },
+        h('button', { class: 'btn', type: 'button', disabled: S.i === 0, onclick: () => step(-1) }, icon('prev', 18), 'Back'),
+        counter,
+        h('button', { class: 'btn', type: 'button', onclick: () => step(1) }, 'Next', icon('next', 18))));
+    }
+    parts.push(h('div', { class: 'fc-tools' },
+      o.track ? h('button', { class: 'btn btn-ghost btn-sm', type: 'button', disabled: !S.hist.length, onclick: undo }, icon('undo', 16), 'Undo') : null,
+      h('button', { class: 'btn btn-ghost btn-sm', type: 'button', 'aria-pressed': String(o.shuffle), onclick: () => { o.shuffle = !o.shuffle; savePrefs(); start(); toast(o.shuffle ? 'Shuffled' : 'Back in order'); } }, icon('shuffle', 16), 'Shuffle'),
+      h('button', { class: 'btn btn-ghost btn-sm', type: 'button', 'aria-expanded': String(!optsBox.hidden), onclick: toggleOpts }, icon('sliders', 16), 'Options')));
+    parts.push(h('p', { class: 'kbd-hint' },
+      h('kbd', { text: 'Space' }), ' flip  ·  ',
+      o.track ? [h('kbd', { text: '←' }), ' still learning  ·  ', h('kbd', { text: '→' }), ' know it']
+        : [h('kbd', { text: '←' }), ' ', h('kbd', { text: '→' }), ' move between cards']));
+    stage.replaceChildren(...parts);
+  }
+
+  function drawOpts() {
+    const s = cur();
+    const n = s ? starCount(s) : 0;
+    optsBox.replaceChildren(
+      switchRow('fc-track', 'Track progress', 'Sort cards into “know it” and “still learning.”', o.track, (v) => { o.track = v; savePrefs(); start(); }),
+      switchRow('fc-starred', 'Starred terms only', n ? `${plural(n, 'starred term')}` : 'Star terms first to use this.', o.starred && n > 0, (v) => { o.starred = v; savePrefs(); start(); }, !n),
+      h('div', { class: 'opt-row' }, h('span', { class: 'opt-label', text: 'Show first' }),
+        seg([{ v: 'term', label: 'Term' }, { v: 'def', label: 'Definition' }], o.front, (v) => { o.front = v; savePrefs(); S.flipped = false; S.dir = 'fade'; paint(); }, { label: 'Show first' })));
+  }
+  function toggleOpts() {
+    optsBox.hidden = !optsBox.hidden;
+    if (!optsBox.hidden) drawOpts();
+    paint();
+  }
+
+  keyHandler = (e, typing) => {
+    if (typing || !S) return;
+    const t = e.target;
+    const onButton = t && t.tagName === 'BUTTON';
+    if (S.done) return;
+    if (e.key === ' ' || e.key === 'Enter') {
+      if (onButton) return;
+      e.preventDefault();
+      flip();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      flip();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (o.track) sort(true); else step(1);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (o.track) sort(false); else step(-1);
+    } else if ((e.key === 'z' || e.key === 'Z' || e.key === 'Backspace') && o.track) {
+      e.preventDefault();
+      undo();
+    } else if (e.key === 's' || e.key === 'S') {
+      const b = stage.querySelector('.card-tools .star-btn[data-fk]');
+      if (b) b.click();
+    }
+  };
+
+  root.append(studyHeader(s0, 'flashcards'), optsBox, stage);
+  start();
+  return root;
+};
+
+/* ================= learn ================= */
+const ROUND_SIZE = 7;
+const PRAISE = ['Correct', 'Nice work', 'You got it', 'That is right'];
+function buildOptions(set, card, side) {
+  const right = card[side];
+  const seen = new Set([norm(right)]);
+  const others = shuffle(set.cards.filter(x => x.id !== card.id)).map(x => x[side]).filter((v) => {
+    const k = norm(v);
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  return shuffle([right, ...others.slice(0, 3)]);
+}
+
+VIEWS.learn = function LearnView() {
+  const s0 = getSet(view.setId);
+  if (!s0) return missingSet();
+  const o = prefs.learn;
+  const root = h('div', { class: 'study' });
+  const optsBox = h('div', { class: 'opts', hidden: true });
+  const top = h('div', { class: 'learn-top' });
+  const stage = h('div');
+  let S = null;
+  let timer = 0;
+  view.cleanup = () => clearTimeout(timer);
+
+  const cur = () => getSet(view.setId);
+  const lvl = (id) => { const v = cur().learn[id]; return v === 0 || v === 1 || v === 2 ? v : undefined; };
+  function poolIds() {
+    const s = cur();
+    let ids = s.cards.map(c => c.id);
+    if (o.starred) { const st = ids.filter(id => s.stars.includes(id)); if (st.length) ids = st; }
+    return ids;
+  }
+  function begin() {
+    clearTimeout(timer);
+    S = { order: shuffle(poolIds()), round: 0, queue: [], qi: 0, cur: null, phase: 'q', requeued: new Set(), roundIds: [] };
+    nextRound();
+  }
+  function nextRound() {
+    const s = cur();
+    if (!s) { show('home'); return; }
+    const pool = poolIds();
+    const inPool = new Set(pool);
+    S.order = S.order.filter(id => inPool.has(id)).concat(pool.filter(id => !S.order.includes(id)));
+    const remaining = S.order.filter(id => lvl(id) !== 2);
+    if (!remaining.length) { S.phase = 'done'; drawTop(); drawStage(); return; }
+    S.round++;
+    const started = remaining.filter(id => lvl(id) !== undefined);
+    const fresh = remaining.filter(id => lvl(id) === undefined);
+    S.roundIds = started.concat(fresh).slice(0, ROUND_SIZE);
+    S.queue = S.roundIds.slice();
+    S.qi = 0;
+    S.requeued = new Set();
+    ask();
+  }
+  function ask() {
+    const s = cur();
+    if (!s) { show('home'); return; }
+    while (S.qi < S.queue.length && !s.cards.some(c => c.id === S.queue[S.qi])) S.queue.splice(S.qi, 1);
+    if (S.qi >= S.queue.length) { endRound(); return; }
+    const id = S.queue[S.qi];
+    const c = s.cards.find(x => x.id === id);
+    const l = lvl(id);
+    let type = o.mc && o.written ? (l === 1 ? 'written' : 'mc') : (o.written ? 'written' : 'mc');
+    const toTerm = o.answer === 'term';
+    const q = {
+      id, type,
+      prompt: toTerm ? c.d : c.t,
+      answer: toTerm ? c.t : c.d,
+      promptLabel: toTerm ? 'Definition' : 'Term',
+      answerWord: toTerm ? 'term' : 'definition',
+      options: null,
+    };
+    if (type === 'mc') {
+      q.options = buildOptions(s, c, toTerm ? 't' : 'd');
+      if (q.options.length < 2) q.type = 'written';
+    }
+    S.cur = q;
+    S.phase = 'q';
+    drawTop();
+    drawStage();
+  }
+  function record(ok) {
+    const q = S.cur;
+    changeSet(view.setId, (st) => {
+      const before = st.learn[q.id];
+      if (!ok) st.learn[q.id] = 0;
+      else if (q.type === 'written') st.learn[q.id] = 2;
+      else if (o.written) st.learn[q.id] = 1;
+      else st.learn[q.id] = Math.min(2, (before === 0 || before === 1 ? before : 0) + 1);
+      st.studied = Date.now();
+    }, { quiet: true, delay: 1200 });
+    if (!ok && !S.requeued.has(q.id)) { S.requeued.add(q.id); S.queue.push(q.id); }
+    drawTop();
+  }
+  function pick(i) {
+    if (!S || S.phase !== 'q' || S.cur.type !== 'mc') return;
+    const q = S.cur;
+    const chosen = i >= 0 ? q.options[i] : null;
+    const ok = chosen === q.answer;
+    S.phase = 'fb';
+    stage.querySelectorAll('.choice').forEach((b, j) => {
+      b.classList.add('locked');
+      b.setAttribute('aria-disabled', 'true');
+      if (q.options[j] === q.answer) b.classList.add('is-right');
+      else if (j === i) b.classList.add('is-wrong');
+      else b.classList.add('dim');
+    });
+    const dk = stage.querySelector('.dont-know');
+    if (dk) dk.hidden = true;
+    record(ok);
+    feedback(ok, chosen, false);
+  }
+  function submitWritten(val) {
+    if (!S || S.phase !== 'q' || S.cur.type !== 'written') return;
+    const q = S.cur;
+    const ok = answerMatches(val, q.answer);
+    S.phase = 'fb';
+    const inp = stage.querySelector('.write .field');
+    if (inp) inp.readOnly = true;
+    stage.querySelectorAll('.write button, .dont-know').forEach(b => { b.hidden = true; });
+    record(ok);
+    feedback(ok, val.trim(), true);
+  }
+  function feedback(ok, given, written) {
+    const q = S.cur;
+    const exact = written && ok && norm(given) !== norm(q.answer);
+    const fb = h('div', { class: 'feedback ' + (ok ? 'ok' : 'no'), role: 'status' });
+    if (ok) {
+      fb.append(h('p', { class: 'fb-title' }, icon('check', 18), PRAISE[Math.floor(Math.random() * PRAISE.length)]));
+      if (exact) fb.append(h('p', { class: 'fb-line' }, h('span', { class: 'fb-k', text: 'Exact answer' }), h('span', { class: 'fb-v', text: q.answer })));
+    } else {
+      fb.append(h('p', { class: 'fb-title' }, icon('x', 18), given ? 'Not quite' : 'Here is the answer'));
+      if (written && given) fb.append(h('p', { class: 'fb-line' }, h('span', { class: 'fb-k', text: 'You wrote' }), h('span', { class: 'fb-v strike', text: given })));
+      fb.append(h('p', { class: 'fb-line' }, h('span', { class: 'fb-k', text: 'Correct answer' }), h('span', { class: 'fb-v', text: q.answer })));
+    }
+    const cont = h('button', { class: 'btn btn-primary', type: 'button', id: 'learn-continue', onclick: advance }, 'Continue');
+    const actions = h('div', { class: 'fb-actions' });
+    if (!ok && written && given) actions.append(h('button', { class: 'btn btn-ghost', type: 'button', onclick: overrideRight }, 'I was right'));
+    actions.append(cont);
+    fb.append(actions);
+    stage.append(fb);
+    if (ok && !exact) timer = setTimeout(advance, written ? 1200 : 900);
+    else cont.focus({ preventScroll: true });
+    fb.scrollIntoView({ block: 'nearest' });
+  }
+  function overrideRight() {
+    clearTimeout(timer);
+    const q = S.cur;
+    changeSet(view.setId, (st) => { st.learn[q.id] = 2; }, { quiet: true, delay: 1200 });
+    if (S.requeued.has(q.id)) {
+      const k = S.queue.lastIndexOf(q.id);
+      if (k > S.qi) S.queue.splice(k, 1);
+      S.requeued.delete(q.id);
+    }
+    toast('Counted as correct');
+    advance();
+  }
+  function advance() {
+    clearTimeout(timer);
+    if (!S || S.phase !== 'fb') return;
+    S.qi++;
+    if (S.qi >= S.queue.length) endRound(); else ask();
+  }
+  function endRound() {
+    const left = poolIds().filter(id => lvl(id) !== 2);
+    S.phase = left.length ? 'roundEnd' : 'done';
+    drawTop();
+    drawStage();
+  }
+  async function restartLearn() {
+    const ok = await confirmBox({ title: 'Start Learn over?', body: 'This resets Learn progress for these terms.', ok: 'Start over' });
+    if (!ok) return;
+    const ids = poolIds();
+    changeSet(view.setId, (st) => { for (const id of ids) delete st.learn[id]; }, { quiet: true, delay: 400 });
+    begin();
+  }
+
+  function drawTop() {
+    const s = cur();
+    if (!s) return;
+    const p = progressOf(s, poolIds());
+    top.replaceChildren(
+      h('div', { class: 'lt-row' },
+        h('span', { class: 'eyebrow', text: S && S.round ? `Round ${S.round}` : 'Learn' }),
+        h('span', { class: 'lt-counts', text: `${p.mastered} mastered · ${p.learning} learning · ${p.fresh} new` }),
+        h('button', { class: 'btn btn-ghost btn-sm', type: 'button', 'aria-expanded': String(!optsBox.hidden), onclick: toggleOpts }, icon('sliders', 16), 'Options')),
+      meter(p));
+  }
+  function questionCard(q) {
+    return h('div', { class: 'q-card enter-fade' },
+      h('div', { class: 'face-head' }, h('span', { class: 'eyebrow', text: q.promptLabel }), starButton(cur(), q.id)),
+      h('div', { class: 'q-body ruled' }, h('div', { class: 'q-text ' + sizeClass(q.prompt), text: q.prompt })));
+  }
+  function drawStage() {
+    const s = cur();
+    if (!s) return;
+    if (S.phase === 'done') {
+      const n = poolIds().length;
+      stage.replaceChildren(h('div', { class: 'results enter-fade' },
+        h('div', { class: 'done-mark' }, icon('check', 28)),
+        h('h2', { class: 'res-title', text: n === 1 ? 'You mastered this term' : `You mastered all ${n} terms` }),
+        h('p', { class: 'muted', text: 'Take a practice test to check yourself, or start Learn over.' }),
+        h('div', { class: 'res-actions' },
+          h('button', { class: 'btn btn-primary', type: 'button', onclick: () => show('test', { setId: view.setId }) }, 'Take a practice test'),
+          h('button', { class: 'btn', type: 'button', onclick: restartLearn }, icon('reset', 16), 'Start Learn over'))));
+      return;
+    }
+    if (S.phase === 'roundEnd') {
+      const p = progressOf(s, poolIds());
+      stage.replaceChildren(h('div', { class: 'round-end enter-fade' },
+        h('p', { class: 'eyebrow', text: `Round ${S.round} done` }),
+        h('h2', { class: 'res-title', text: `${p.mastered} of ${p.total} mastered` }),
+        h('ul', { class: 'round-list' }, ...S.roundIds.map((id) => {
+          const c = s.cards.find(x => x.id === id);
+          if (!c) return null;
+          const m = lvl(id) === 2;
+          return h('li', null, h('span', { class: 'rl-t', text: c.t }), h('span', { class: 'pill ' + (m ? 'pill-good' : 'pill-learn'), text: m ? 'Mastered' : 'Learning' }));
+        })),
+        h('div', null, h('button', { class: 'btn btn-primary', type: 'button', id: 'learn-next-round', onclick: nextRound }, `Continue to round ${S.round + 1}`))));
+      const b = stage.querySelector('#learn-next-round');
+      if (b) b.focus({ preventScroll: true });
+      return;
+    }
+    const q = S.cur;
+    let area;
+    if (q.type === 'mc') {
+      area = h('div', { class: 'answer-area' },
+        h('p', { class: 'prompt-hint', text: `Choose the matching ${q.answerWord}` }),
+        h('div', { class: 'choices' }, ...q.options.map((opt, i) => h('button', { class: 'choice', type: 'button', onclick: () => pick(i) },
+          h('span', { class: 'key', 'aria-hidden': 'true', text: String(i + 1) }), h('span', { class: 'choice-t', text: opt })))),
+        h('button', { class: 'btn btn-ghost btn-sm dont-know', type: 'button', onclick: () => pick(-1) }, "Don't know"));
+    } else {
+      const input = h('input', { class: 'field', id: 'learn-answer', type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: false, placeholder: `Type the ${q.answerWord}`, 'aria-label': `Type the ${q.answerWord}` });
+      area = h('div', { class: 'answer-area' },
+        h('p', { class: 'prompt-hint', text: `Type the matching ${q.answerWord}` }),
+        h('form', { class: 'write', onsubmit: (e) => { e.preventDefault(); submitWritten(input.value); } },
+          input, h('button', { class: 'btn btn-primary', type: 'submit' }, 'Answer')),
+        h('button', { class: 'btn btn-ghost btn-sm dont-know', type: 'button', onclick: () => submitWritten('') }, "Don't know"));
+      setTimeout(() => { if (input.isConnected) input.focus({ preventScroll: true }); }, 40);
+    }
+    stage.replaceChildren(questionCard(q), area);
+  }
+  function drawOpts() {
+    const s = cur();
+    const n = s ? starCount(s) : 0;
+    const guard = (key, other) => (v, el) => {
+      if (!v && !o[other]) { el.checked = true; toast('Keep at least one question type on.'); return; }
+      o[key] = v; savePrefs(); begin();
+    };
+    optsBox.replaceChildren(
+      h('div', { class: 'opt-row' }, h('span', { class: 'opt-label', text: 'Answer with' }),
+        seg([{ v: 'term', label: 'Term' }, { v: 'def', label: 'Definition' }], o.answer, (v) => { o.answer = v; savePrefs(); begin(); }, { label: 'Answer with' })),
+      h('div', { class: 'opt-row' }, h('span', { class: 'opt-label', text: 'Question types' }),
+        h('div', { class: 'checks' }, checkRow('lo-mc', 'Multiple choice', o.mc, guard('mc', 'written')), checkRow('lo-wr', 'Written', o.written, guard('written', 'mc')))),
+      switchRow('lo-star', 'Starred terms only', n ? plural(n, 'starred term') : 'Star terms first to use this.', o.starred && n > 0, (v) => { o.starred = v; savePrefs(); begin(); }, !n),
+      h('div', { class: 'opt-row' }, h('button', { class: 'btn btn-ghost btn-sm danger-text', type: 'button', onclick: restartLearn }, icon('reset', 16), 'Reset Learn progress')));
+  }
+  function toggleOpts() {
+    optsBox.hidden = !optsBox.hidden;
+    if (!optsBox.hidden) drawOpts();
+    drawTop();
+  }
+
+  keyHandler = (e, typing) => {
+    if (!S) return;
+    const onButton = e.target && e.target.tagName === 'BUTTON';
+    if (S.phase === 'q' && S.cur.type === 'mc' && !typing && /^[1-4]$/.test(e.key)) {
+      const i = Number(e.key) - 1;
+      if (i < S.cur.options.length) { e.preventDefault(); pick(i); }
+      return;
+    }
+    if (S.phase === 'fb' && e.key === 'Enter') {
+      if (onButton) return;
+      e.preventDefault();
+      advance();
+    }
+  };
+
+  root.append(studyHeader(s0, 'learn'), optsBox, top, stage);
+  begin();
+  return root;
+};
+
+/* ================= test ================= */
+const TYPE_NAMES = { tf: 'True or false', mc: 'Multiple choice', written: 'Written' };
+function buildTest(set, n, types, dir) {
+  const ids = shuffle(set.cards.map(c => c.id)).slice(0, n);
+  const byId = new Map(set.cards.map(c => [c.id, c]));
+  const counts = { tf: 0, mc: 0, written: 0 };
+  ids.forEach((_, i) => { counts[types[i % types.length]]++; });
+  const qs = [];
+  let k = 0;
+  for (const type of ['tf', 'mc', 'written']) {
+    for (let j = 0; j < counts[type]; j++) {
+      const c = byId.get(ids[k++]);
+      const toTerm = dir === 'both' ? Math.random() < 0.5 : dir === 'term';
+      const side = toTerm ? 't' : 'd';
+      const q = {
+        cid: c.id, type,
+        prompt: toTerm ? c.d : c.t, answer: c[side],
+        pLabel: toTerm ? 'Definition' : 'Term', aWord: toTerm ? 'term' : 'definition',
+        response: null, correct: null, override: false,
+      };
+      if (type === 'mc') {
+        q.options = buildOptions(set, c, side);
+        if (q.options.length < 2) q.type = 'written';
+      } else if (type === 'tf') {
+        const others = set.cards.filter(x => x.id !== c.id && norm(x[side]) !== norm(q.answer));
+        if (others.length && Math.random() < 0.5) { q.shown = others[Math.floor(Math.random() * others.length)][side]; q.truth = false; }
+        else { q.shown = q.answer; q.truth = true; }
+      }
+      qs.push(q);
+    }
+  }
+  return qs;
+}
+
+VIEWS.test = function TestView() {
+  const s0 = getSet(view.setId);
+  if (!s0) return missingSet();
+  const o = prefs.test;
+  const root = h('div', { class: 'study' });
+  const body = h('div');
+  let T = null;
+  const cur = () => getSet(view.setId);
+
+  function drawSetup() {
+    const s = cur();
+    if (!s) { show('home'); return; }
+    const N = s.cards.length;
+    const startN = Math.max(1, Math.min(o.n || 20, N));
+    const err = h('p', { class: 'form-err', role: 'alert' });
+    const numIn = h('input', { class: 'field', id: 'test-n', type: 'number', min: 1, max: N, step: 1, value: String(startN), inputmode: 'numeric' });
+    const typeDefs = [['tf', 'True or false'], ['mc', 'Multiple choice'], ['written', 'Written']];
+    const startBtn = h('button', { class: 'btn btn-primary', type: 'button', onclick: () => {
+      const n = Math.round(Number(numIn.value));
+      const types = typeDefs.map(t => t[0]).filter(k => o[k]);
+      if (!Number.isFinite(n) || n < 1 || n > N) { err.textContent = `Pick a number from 1 to ${N}.`; numIn.focus(); return; }
+      if (!types.length) { err.textContent = 'Pick at least one question type.'; return; }
+      o.n = n; savePrefs();
+      T = { qs: buildTest(s, n, types, o.dir), started: Date.now(), ms: 0 };
+      drawTest();
+      window.scrollTo(0, 0);
+    } }, 'Start test');
+    body.replaceChildren(h('section', { class: 'setup paper-panel enter-fade' },
+      h('div', null,
+        h('h1', { class: 'study-title', text: 'Practice test' }),
+        h('p', { class: 'muted', text: 'Choose what goes on your test. You get a score and a review of every question at the end.' })),
+      h('div', { class: 'setup-grid' },
+        h('div', { class: 'setup-row' },
+          h('label', { class: 'label', for: 'test-n', text: `Questions (up to ${N})` }),
+          h('div', { class: 'num-row' }, numIn, h('span', { class: 'muted small', text: `of ${plural(N, 'term')}` }))),
+        h('fieldset', { class: 'setup-row' },
+          h('legend', { class: 'label', text: 'Question types' }),
+          h('div', { class: 'checks' }, ...typeDefs.map(([k, label]) => checkRow('test-' + k, label, o[k], (v) => { o[k] = v; savePrefs(); err.textContent = ''; })))),
+        h('div', { class: 'setup-row' },
+          h('span', { class: 'label', text: 'Answer with' }),
+          h('div', null, seg([{ v: 'term', label: 'Term' }, { v: 'def', label: 'Definition' }, { v: 'both', label: 'Both' }], o.dir, (v) => { o.dir = v; savePrefs(); }, { label: 'Answer with' })))),
+      err,
+      h('div', null, startBtn)));
+  }
+
+  const answered = (q) => (q.type === 'written' ? !!(q.response && q.response.trim()) : q.response != null);
+  function drawTest() {
+    const s = cur();
+    const list = h('div', { class: 'test-list' });
+    let lastType = null;
+    T.qs.forEach((q, i) => {
+      if (q.type !== lastType) { list.append(h('h2', { class: 'test-sec', text: TYPE_NAMES[q.type] })); lastType = q.type; }
+      list.append(questionBox(q, i));
+    });
+    const count = h('span', { class: 'answered', 'aria-live': 'polite' });
+    T.updateCount = () => { count.textContent = `${T.qs.filter(answered).length} of ${T.qs.length} answered`; };
+    T.updateCount();
+    body.replaceChildren(
+      h('div', { class: 'test-intro' },
+        h('h1', { class: 'study-title', text: s ? s.title : 'Practice test' }),
+        h('p', { class: 'muted', text: `${plural(T.qs.length, 'question')}. Answer what you can, then submit.` })),
+      list,
+      h('div', { class: 'test-foot' }, count, h('button', { class: 'btn btn-primary', type: 'button', onclick: trySubmit }, 'Submit test')));
+  }
+  function pickIn(group, btn) { group.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === btn))); }
+  function questionBox(q, i) {
+    const box = h('section', { class: 'test-q', id: 'q-' + i, 'aria-label': `Question ${i + 1}` },
+      h('div', { class: 'tq-head' }, h('span', { class: 'eyebrow', text: q.pLabel }), h('span', { class: 'qnum', text: `${i + 1} of ${T.qs.length}` })),
+      h('div', { class: 'tq-prompt ' + sizeClass(q.prompt), text: q.prompt }));
+    if (q.type === 'tf') {
+      box.append(h('div', { class: 'tf-shown' }, h('span', { class: 'eyebrow', text: q.aWord === 'term' ? 'Term' : 'Definition' }), h('div', { class: 'hand', text: q.shown })));
+      const group = h('div', { class: 'tf-btns', role: 'group', 'aria-label': 'True or false' });
+      for (const [v, label] of [[true, 'True'], [false, 'False']]) {
+        const b = h('button', { class: 'choice tf', type: 'button', 'aria-pressed': 'false', onclick: () => { q.response = v; pickIn(group, b); T.updateCount(); } }, label);
+        group.append(b);
+      }
+      box.append(group);
+    } else if (q.type === 'mc') {
+      const group = h('div', { class: 'choices', role: 'group', 'aria-label': `Choose the matching ${q.aWord}` });
+      q.options.forEach((opt, j) => {
+        const b = h('button', { class: 'choice', type: 'button', 'aria-pressed': 'false', onclick: () => { q.response = j; pickIn(group, b); T.updateCount(); } },
+          h('span', { class: 'key', 'aria-hidden': 'true', text: String.fromCharCode(65 + j) }), h('span', { class: 'choice-t', text: opt }));
+        group.append(b);
+      });
+      box.append(h('p', { class: 'prompt-hint', text: `Choose the matching ${q.aWord}` }), group);
+    } else {
+      box.append(h('input', {
+        class: 'field write-in hand', id: 'test-a-' + i, type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: false,
+        placeholder: `Type the ${q.aWord}`, 'aria-label': `Answer for question ${i + 1}`,
+        oninput: (e) => { q.response = e.target.value; T.updateCount(); },
+        onkeydown: (e) => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          const next = [...body.querySelectorAll('.write-in')].find(x => Number(x.id.slice(7)) > i);
+          if (next) next.focus();
+        },
+      }));
+    }
+    return box;
+  }
+  async function trySubmit() {
+    const left = T.qs.filter(q => !answered(q)).length;
+    if (left) {
+      const ok = await confirmBox({ title: `Submit with ${plural(left, 'question')} unanswered?`, body: 'Unanswered questions count as wrong.', ok: 'Submit test', cancel: 'Keep working' });
+      if (!ok) return;
+    }
+    for (const q of T.qs) {
+      if (q.type === 'tf') q.correct = q.response === q.truth;
+      else if (q.type === 'mc') q.correct = q.response != null && q.options[q.response] === q.answer;
+      else q.correct = answerMatches(q.response || '', q.answer);
+    }
+    T.ms = Date.now() - T.started;
+    saveScore();
+    drawResults();
+    window.scrollTo(0, 0);
+  }
+  const score = () => T.qs.filter(q => q.correct || q.override).length;
+  function saveScore() {
+    const sc = score();
+    changeSet(view.setId, (st) => { st.lastTest = { score: sc, total: T.qs.length, at: Date.now() }; st.studied = Date.now(); }, { quiet: true, delay: 600 });
+  }
+  function line(k, v, cls) {
+    return h('div', { class: 'rv-line' }, h('span', { class: 'k', text: k }), h('span', { class: 'v' + (cls ? ' ' + cls : ''), text: v }));
+  }
+  function reviewRow(q, i) {
+    const ok = q.correct || q.override;
+    const lines = [];
+    if (q.type === 'tf') {
+      lines.push(line(q.aWord === 'term' ? 'Term shown' : 'Definition shown', q.shown));
+      lines.push(line('Your answer', q.response == null ? 'No answer' : (q.response ? 'True' : 'False'), ok ? 'good' : 'bad'));
+      if (!ok) lines.push(line('Correct answer', q.truth ? 'True' : 'False'));
+      if (!q.truth) lines.push(line(`Matching ${q.aWord}`, q.answer, 'good'));
+    } else {
+      const given = q.type === 'mc' ? (q.response == null ? '' : q.options[q.response]) : String(q.response || '').trim();
+      lines.push(line('Your answer', given || 'No answer', ok ? 'good' : 'bad'));
+      if (!ok || (q.type === 'written' && norm(given) !== norm(q.answer))) lines.push(line('Correct answer', q.answer, 'good'));
+      if (q.type === 'written' && !q.correct && given) {
+        lines.push(h('button', { class: 'btn btn-ghost btn-sm rv-fix', type: 'button', onclick: () => { q.override = !q.override; saveScore(); drawResults(); } },
+          q.override ? 'Undo: count it wrong' : 'I was right'));
+      }
+    }
+    return h('div', { class: 'rv ' + (ok ? 'rv-ok' : 'rv-no') },
+      h('div', { class: 'rv-mark', 'aria-label': ok ? 'Correct' : 'Wrong', role: 'img' }, icon(ok ? 'check' : 'x', 18)),
+      h('div', { class: 'rv-main' },
+        h('div', { class: 'rv-top' }, h('span', { class: 'qnum', text: String(i + 1) }), h('span', { class: 'eyebrow', text: TYPE_NAMES[q.type] })),
+        h('div', { class: 'rv-prompt', text: q.prompt }),
+        ...lines));
+  }
+  function drawResults() {
+    const sc = score(), total = T.qs.length;
+    const pct = Math.round((sc / total) * 100);
+    const missed = T.qs.filter(q => !(q.correct || q.override));
+    const msg = pct >= 90 ? 'Excellent work.' : pct >= 75 ? 'Good job. Review the ones you missed.' : pct >= 50 ? 'Getting there. Study the misses, then try again.' : 'Keep at it. Flashcards and Learn will help.';
+    const starBtn = missed.length ? h('button', { class: 'btn', type: 'button', onclick: () => {
+      changeSet(view.setId, (st) => { for (const q of missed) if (!st.stars.includes(q.cid)) st.stars.push(q.cid); }, { quiet: true, delay: 400 });
+      starBtn.disabled = true;
+      starBtn.replaceChildren(icon('check', 16), 'Starred');
+      toast(`Starred ${plural(missed.length, 'term')}. Study them with “Starred terms only.”`);
+    } }, icon('star', 16), `Star missed terms (${missed.length})`) : null;
+    body.replaceChildren(
+      h('section', { class: 'score-card enter-fade' },
+        h('div', { class: 'score-ring', style: `--p:${pct}`, role: 'img', 'aria-label': `${pct} percent` }, h('b', { text: pct + '%' })),
+        h('div', { class: 'score-text' },
+          h('h1', { class: 'res-title', text: `${sc} of ${total} correct` }),
+          h('p', { class: 'muted', text: `${msg} Time: ${fmtClock(T.ms)}.` }),
+          h('div', { class: 'res-actions' }, starBtn, h('button', { class: 'btn btn-primary', type: 'button', onclick: () => { drawSetup(); window.scrollTo(0, 0); } }, 'New test')))),
+      h('section', { class: 'review' }, h('h2', { class: 'h2', text: 'Review' }), ...T.qs.map(reviewRow)));
+  }
+
+  root.append(studyHeader(s0, 'test'), body);
+  drawSetup();
+  return root;
+};
+
+/* ================= match ================= */
+function pickPairs(set, n) {
+  const out = [], seen = new Set();
+  for (const c of shuffle(set.cards.slice())) {
+    const a = norm(c.t), b = norm(c.d);
+    if (!a || !b || a === b || seen.has(a) || seen.has(b)) continue;
+    seen.add(a); seen.add(b);
+    out.push(c);
+    if (out.length === n) break;
+  }
+  return out;
+}
+VIEWS.match = function MatchView() {
+  const s0 = getSet(view.setId);
+  if (!s0) return missingSet();
+  const root = h('div', { class: 'study' });
+  const body = h('div');
+  let M = null, raf = 0, endTimer = 0;
+  view.cleanup = () => { cancelAnimationFrame(raf); clearTimeout(endTimer); if (M) M.done = true; };
+  const cur = () => getSet(view.setId);
+
+  function drawReady() {
+    cancelAnimationFrame(raf);
+    if (M) M.done = true;
+    const s = cur();
+    if (!s) { show('home'); return; }
+    body.replaceChildren(h('section', { class: 'match-ready paper-panel enter-fade' },
+      h('h1', { class: 'study-title', text: 'Match' }),
+      h('p', { class: 'muted', text: 'Tap a term, then tap its definition. Clear the board as fast as you can. A wrong match adds 1 second.' }),
+      s.matchBest ? h('p', { class: 'best' }, icon('clock', 16), `Your best: ${secs(s.matchBest)} seconds`) : null,
+      h('button', { class: 'btn btn-primary', type: 'button', id: 'match-start', onclick: startGame }, 'Start game')));
+  }
+  const elapsed = () => (performance.now() - M.start) / 1000 + M.penalty;
+  function startGame() {
+    const s = cur();
+    if (!s) { show('home'); return; }
+    const pairs = pickPairs(s, 6);
+    if (pairs.length < 2) { toast('Match needs at least 2 cards with different terms and definitions.'); return; }
+    const tiles = shuffle(pairs.flatMap(c => [{ cid: c.id, side: 't', text: c.t }, { cid: c.id, side: 'd', text: c.d }]));
+    const timerEl = h('span', { class: 'timer', text: '0.0' });
+    const penEl = h('span', { class: 'penalty', 'aria-hidden': 'true', text: '+1 sec' });
+    const grid = h('div', { class: 'match-grid' });
+    M = { tiles, left: pairs.length, sel: null, penalty: 0, start: performance.now(), done: false, penEl };
+    tiles.forEach((t, i) => {
+      t.el = h('button', { class: 'mt ' + tileSize(t.text), type: 'button', onclick: () => tap(i) }, h('span', { text: t.text }));
+      grid.append(t.el);
+    });
+    body.replaceChildren(
+      h('div', { class: 'match-top' },
+        h('div', { class: 'timer-wrap' }, icon('clock', 20), timerEl, penEl),
+        h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: drawReady }, 'Quit')),
+      grid);
+    const loop = () => {
+      if (!M || M.done) return;
+      timerEl.textContent = elapsed().toFixed(1);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+  }
+  function tap(i) {
+    if (!M || M.done) return;
+    const t = M.tiles[i];
+    if (t.gone) return;
+    if (M.sel === i) { t.el.classList.remove('sel'); M.sel = null; return; }
+    if (M.sel == null) { M.sel = i; t.el.classList.add('sel'); return; }
+    const a = M.tiles[M.sel];
+    M.sel = null;
+    a.el.classList.remove('sel');
+    if (a.cid === t.cid && a.side !== t.side) {
+      a.gone = t.gone = true;
+      a.el.classList.add('ok');
+      t.el.classList.add('ok');
+      const ae = a.el, te = t.el;
+      setTimeout(() => { ae.classList.add('gone'); te.classList.add('gone'); }, 160);
+      M.left--;
+      if (M.left === 0) finish();
+    } else {
+      M.penalty += 1;
+      const ae = a.el, te = t.el;
+      ae.classList.remove('wrong'); te.classList.remove('wrong');
+      void ae.offsetWidth;
+      ae.classList.add('wrong'); te.classList.add('wrong');
+      setTimeout(() => { ae.classList.remove('wrong'); te.classList.remove('wrong'); }, 380);
+      M.penEl.classList.add('show');
+      clearTimeout(M.penTimer);
+      M.penTimer = setTimeout(() => M.penEl.classList.remove('show'), 800);
+    }
+  }
+  function finish() {
+    M.done = true;
+    cancelAnimationFrame(raf);
+    const total = elapsed();
+    const ms = Math.round(total * 1000);
+    const s = cur();
+    if (!s) return;
+    const prevBest = s.matchBest;
+    const isBest = !prevBest || ms < prevBest;
+    changeSet(s.id, (st) => { if (isBest) st.matchBest = ms; st.studied = Date.now(); }, { quiet: true, delay: 400 });
+    const penalty = M.penalty;
+    endTimer = setTimeout(() => {
+      body.replaceChildren(h('section', { class: 'match-ready paper-panel enter-fade' },
+        h('p', { class: 'eyebrow', text: isBest ? (prevBest ? 'New best time' : 'Your first finish') : 'Finished' }),
+        h('div', { class: 'big-time' }, total.toFixed(1), h('small', { text: ' seconds' })),
+        h('p', { class: 'muted', text: isBest
+          ? (prevBest ? `You beat your old best of ${secs(prevBest)} seconds.` : 'That is the time to beat.')
+          : `Your best is ${secs(prevBest)} seconds.` }),
+        penalty ? h('p', { class: 'muted small', text: `Includes ${plural(penalty, 'second')} added for wrong matches.` }) : null,
+        h('div', { class: 'res-actions' },
+          h('button', { class: 'btn btn-primary', type: 'button', id: 'match-again', onclick: startGame }, 'Play again'),
+          h('button', { class: 'btn', type: 'button', onclick: () => show('set', { setId: view.setId }) }, 'Back to set'))));
+      const again = document.getElementById('match-again');
+      if (again) again.focus({ preventScroll: true });
+    }, 450);
+  }
+
+  root.append(studyHeader(s0, 'match'), body);
+  drawReady();
+  return root;
+};
+
+/* ================= boot ================= */
+buildTopbar();
+renderView();
+updateSync();
+connect();
+sampleReady.then(() => { if (view.name === 'edit' && view.onSample) view.onSample(); });
+})();
+</script>
+</body>
+</html>
