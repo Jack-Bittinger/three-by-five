@@ -250,6 +250,11 @@ textarea.field { resize: vertical; min-height: 44px; }
 .star-btn[aria-pressed="true"] .icon { fill: var(--hi); stroke: var(--hi-edge); }
 .tool-panel { display: grid; gap: 14px; padding: 18px; margin-bottom: 18px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); }
 .panel-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.panel-actions:not(:has(> :not([hidden]))) { display: none; }
+.drop { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 18px; border: 2px dashed var(--line); border-radius: var(--r-sm); background: var(--paper); }
+.tool-panel { transition: border-color .15s, background-color .15s; }
+.tool-panel.dragging { border-color: var(--pen); background: var(--pen-wash); }
+.tool-panel.dragging .drop { border-color: var(--pen); }
 .panel-status { font-size: var(--fs-sm); color: var(--ink-2); }
 .panel-status:empty { display: none; }
 .panel-status.err { color: var(--bad); font-weight: 700; }
@@ -542,6 +547,7 @@ const ICONS = {
   match: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   notes: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/>',
+  pdf: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M12 18v-6"/><path d="m9.5 14.5 2.5-2.5 2.5 2.5"/>',
   swap: '<path d="M7 20V4"/><path d="m3 8 4-4 4 4"/><path d="M17 4v16"/><path d="m21 16-4 4-4-4"/>',
   prev: '<path d="m15 18-6-6 6-6"/>',
   next: '<path d="m9 18 6-6-6-6"/>',
@@ -1182,9 +1188,10 @@ function emptyState() {
   return h('section', { class: 'empty' },
     h('div', null,
       h('h2', { text: 'Make your first study set' }),
-      h('p', { text: 'Type your terms and definitions, or paste a whole list at once. Then study them with flashcards, learn, test and match. Every mode is free, with no limits.' }),
+      h('p', { text: 'Type your terms and definitions, paste a whole list at once, or upload a PDF. Then study them with flashcards, learn, test and match. Every mode is free, with no limits.' }),
       h('div', { class: 'empty-actions' },
         h('button', { class: 'btn btn-primary', type: 'button', onclick: () => show('edit', {}) }, icon('plus', 18), 'Create a set'),
+        h('button', { class: 'btn', type: 'button', onclick: () => show('edit', { openPdf: true }) }, icon('pdf', 18), 'Upload a PDF'),
         h('button', { class: 'btn', type: 'button', onclick: () => show('edit', { openImport: true }) }, icon('clipboard', 18), 'Paste a list')),
       h('ul', { class: 'mode-list' }, ...MODES.map(m => h('li', null,
         h('span', { class: 'mi' }, icon(m.icon, 16)),
@@ -1448,6 +1455,7 @@ function findSep(line, st) {
   }
   return null;
 }
+const HEADER_WORDS = new Set(['term', 'terms', 'word', 'words', 'vocabulary', 'vocab', 'definition', 'definitions', 'meaning', 'meanings', 'question', 'questions', 'answer', 'answers']);
 function parseList(text, st) {
   let chunks;
   if (st.card === 'semi') chunks = text.split(';');
@@ -1462,6 +1470,7 @@ function parseList(text, st) {
     const t = m ? line.slice(0, m.i).trim() : '';
     const d = m ? line.slice(m.i + m.len).trim() : '';
     if (!t || !d) { skipped++; continue; }
+    if (HEADER_WORDS.has(norm(t)) && HEADER_WORDS.has(norm(d))) continue;
     cards.push({ t: t.slice(0, 2000), d: d.slice(0, 4000) });
   }
   return { cards, skipped };
@@ -1499,8 +1508,8 @@ function importPanel(onAdd) {
   }
   function update() {
     if (!st.picked && st.card === 'line') {
-      const g = detectSep(ta.value);
-      if (g && g !== st.term) { st.term = g; drawSegs(); }
+      const g = detectSep(ta.value) || bestSep(ta.value);
+      if (g && g !== st.term) { st.term = g; customTermIn.hidden = true; drawSegs(); }
     }
     const { cards, skipped } = parseList(ta.value, st);
     addBtn.disabled = !cards.length;
@@ -1537,7 +1546,24 @@ function importPanel(onAdd) {
     preview,
     h('div', { class: 'panel-actions' }, addBtn));
   panel.focusInput = () => ta.focus();
+  panel.setText = (t) => {
+    ta.value = t;
+    st.picked = false;
+    st.card = 'line';
+    customCardIn.hidden = true;
+    drawSegs();
+    update();
+    customTermIn.hidden = st.term !== 'custom';
+  };
   return panel;
+}
+function bestSep(text) {
+  let best = null, most = 1;
+  for (const term of ['tab', 'dash', 'colon']) {
+    const n = parseList(text, { term, card: 'line' }).cards.length;
+    if (n > most) { best = term; most = n; }
+  }
+  return best;
 }
 
 const SAMPLE_OFF = new Set(['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed']);
@@ -1553,23 +1579,60 @@ function sampleErrorText(code) {
     default: return 'Something went wrong. Try again in a moment.';
   }
 }
-function notesPrompt(notes) {
+const NOTES_MAX = 60000;
+function notesPrompt(notes, fromImages) {
+  const src = fromImages ? 'pages' : 'notes';
   return [
-    "You turn a student's notes into study flashcards.",
-    'Make one card for each key term, person, place, date, event, formula or idea in the notes.',
+    fromImages
+      ? "The attached images are pages from a student's handout, notes or textbook. Turn them into study flashcards."
+      : "You turn a student's notes into study flashcards.",
+    `Make one card for each key term, person, place, date, event, formula or idea in the ${src}.`,
     'Rules:',
     '- "term": short, 1 to 6 words (the word, name, date or idea).',
-    '- "definition": one clear phrase or sentence under 25 words, based only on the notes.',
-    '- Write in the same language as the notes. Skip filler. No duplicate cards. At most 60 cards.',
+    `- "definition": one clear phrase or sentence under 25 words, based only on the ${src}.`,
+    `- Write in the same language as the ${src}. Skip filler. No duplicate cards. At most 60 cards.`,
     '- Reply with one JSON object per line and nothing else: no numbering, no code fences, no other text.',
     'Example line:',
     '{"term":"Mitochondria","definition":"Organelle that turns food into energy (ATP) for the cell"}',
-    '',
-    'Notes:',
-    '"""',
-    notes.slice(0, 30000),
-    '"""',
+    ...(fromImages ? [] : ['', 'Notes:', '"""', notes.slice(0, NOTES_MAX), '"""']),
   ].join('\n');
+}
+/* Asks Claude for cards and adds them as each line arrives. Resolves with how many came back and any error. */
+async function streamCards(input, opts, onCards) {
+  let pending = '', added = 0, error = null;
+  const take = (line) => {
+    line = line.trim().replace(/,\s*$/, '');
+    if (!line || (line[0] !== '{' && line[0] !== '[')) return;
+    let v;
+    try { v = JSON.parse(line); } catch (e) { return; }
+    const arr = (Array.isArray(v) ? v : [v])
+      .filter(o => o && typeof o.term === 'string' && typeof o.definition === 'string' && o.term.trim() && o.definition.trim())
+      .map(o => ({ t: o.term.trim().slice(0, 300), d: o.definition.trim().slice(0, 1000) }));
+    if (!arr.length) return;
+    added += arr.length;
+    onCards(arr, added);
+  };
+  try {
+    await sampleFn(input, Object.assign({
+      cache: false,
+      onText: ({ delta }) => {
+        const lines = (pending + delta).split('\n');
+        pending = lines.pop();
+        lines.forEach(take);
+      },
+    }, opts));
+  } catch (e) {
+    error = e || { code: 'upstream_error' };
+  }
+  take(pending);
+  return { added, error };
+}
+function claudeResultText(added, error) {
+  if (error && error.code === 'cancelled') return added ? `Stopped. Kept ${plural(added, 'card')}.` : 'Stopped.';
+  if (error) return sampleErrorText(error.code) + (added ? ` The ${plural(added, 'card')} added so far were kept.` : '');
+  return added
+    ? `Done. Added ${plural(added, 'card')} below. Read them over before you save.`
+    : 'No cards came back. Try notes with clear terms and facts.';
 }
 function notesPanel(onCards) {
   const ta = h('textarea', { class: 'field', id: 'notes-text', rows: 8, maxlength: 30000, placeholder: 'Paste class notes, a study guide or part of a textbook chapter.' });
@@ -1586,49 +1649,16 @@ function notesPanel(onCards) {
     go.disabled = true;
     stop.hidden = false;
     status.textContent = 'Claude is reading your notes. This can take up to a minute.';
-    let pending = '', added = 0;
-    const take = (line) => {
-      line = line.trim().replace(/,\s*$/, '');
-      if (!line || (line[0] !== '{' && line[0] !== '[')) return;
-      let v;
-      try { v = JSON.parse(line); } catch (e) { return; }
-      const arr = (Array.isArray(v) ? v : [v])
-        .filter(o => o && typeof o.term === 'string' && typeof o.definition === 'string' && o.term.trim() && o.definition.trim())
-        .map(o => ({ t: o.term.trim().slice(0, 300), d: o.definition.trim().slice(0, 1000) }));
-      if (!arr.length) return;
+    const { added, error } = await streamCards(notesPrompt(notes), { signal: ctl.signal }, (arr, total) => {
       onCards(arr);
-      added += arr.length;
-      status.textContent = `Added ${plural(added, 'card')} so far…`;
-    };
-    try {
-      await sampleFn(notesPrompt(notes), {
-        signal: ctl.signal,
-        cache: false,
-        onText: ({ delta }) => {
-          const lines = (pending + delta).split('\n');
-          pending = lines.pop();
-          lines.forEach(take);
-        },
-      });
-      take(pending);
-      pending = '';
-      status.textContent = added
-        ? `Done. Added ${plural(added, 'card')} below. Read them over before you save.`
-        : 'No cards came back. Try notes with clear terms and facts.';
-    } catch (e) {
-      const code = e && e.code;
-      if (code === 'cancelled') {
-        status.textContent = added ? `Stopped. Kept ${plural(added, 'card')}.` : 'Stopped.';
-      } else {
-        status.textContent = sampleErrorText(code);
-        status.className = 'panel-status err';
-        if (SAMPLE_OFF.has(code)) { go.hidden = true; }
-      }
-    } finally {
-      go.disabled = false;
-      stop.hidden = true;
-      ctl = null;
-    }
+      status.textContent = `Added ${plural(total, 'card')} so far…`;
+    });
+    status.textContent = claudeResultText(added, error);
+    if (error && error.code !== 'cancelled') status.className = 'panel-status err';
+    if (error && SAMPLE_OFF.has(error.code)) go.hidden = true;
+    go.disabled = false;
+    stop.hidden = true;
+    ctl = null;
   });
   stop.addEventListener('click', () => { if (ctl) ctl.abort(); });
   const panel = h('section', { class: 'tool-panel' },
@@ -1639,6 +1669,231 @@ function notesPanel(onCards) {
     h('div', { class: 'panel-actions' }, go, stop),
     status);
   panel.focusInput = () => ta.focus();
+  return panel;
+}
+
+/* ---------- reading PDFs (pdf.js loads only when someone picks a PDF) ---------- */
+const PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+const PDF_MAX_PAGES = 80;
+const PDF_MAX_BYTES = 40 * 1024 * 1024;
+let pdfjsPromise = null;
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = false;
+    s.onload = () => resolve();
+    s.onerror = () => reject(Object.assign(new Error('script'), { name: 'LoadError' }));
+    document.head.append(s);
+  });
+}
+function loadPdfJs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = (async () => {
+      if (!window.pdfjsLib) await loadScript(PDFJS_BASE + 'pdf.min.js');
+      if (!window.pdfjsWorker) await loadScript(PDFJS_BASE + 'pdf.worker.min.js');
+      const lib = window.pdfjsLib;
+      if (!lib) throw Object.assign(new Error('missing'), { name: 'LoadError' });
+      lib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + 'pdf.worker.min.js';
+      return lib;
+    })().catch((e) => { pdfjsPromise = null; throw e; });
+  }
+  return pdfjsPromise;
+}
+/* Rebuilds lines from the positioned text pieces on a page. A wide gap inside a line becomes a tab,
+   so two-column vocabulary tables turn into "term<TAB>definition" rows. */
+async function pdfPageText(page) {
+  const tc = await page.getTextContent();
+  const lines = [];
+  let line = '', lastY = null, lastEnd = null, lastSize = 10;
+  for (const it of tc.items) {
+    if (typeof it.str !== 'string') continue;
+    const tr = it.transform || [1, 0, 0, 10, 0, 0];
+    const x = tr[4], y = tr[5];
+    const size = it.height || Math.abs(tr[3]) || lastSize;
+    if (it.str && !it.str.trim()) {
+      // pdf.js reports the space between columns as one wide blank piece
+      if (line) line += (it.width || 0) > lastSize * 1.5 ? '\t' : ' ';
+      if (it.width) lastEnd = x + it.width;
+    } else if (it.str) {
+      if (lastY !== null && Math.abs(y - lastY) > size * 0.5) {
+        if (line.trim()) lines.push(line);
+        line = '';
+        lastEnd = null;
+      }
+      if (line && lastEnd !== null) {
+        const gap = x - lastEnd;
+        if (gap > size * 1.5) line += '\t';
+        else if (gap > size * 0.15 && !/\s$/.test(line) && !/^\s/.test(it.str)) line += ' ';
+      }
+      line += it.str;
+      lastEnd = x + (it.width || 0);
+      lastY = y;
+      lastSize = size;
+    }
+    if (it.hasEOL) {
+      if (line.trim()) lines.push(line);
+      line = '';
+      lastY = null;
+      lastEnd = null;
+    }
+  }
+  if (line.trim()) lines.push(line);
+  return lines.map(l => l.replace(/[  ]+/g, ' ').replace(/ *\t[\t ]*/g, '\t').trim()).filter(Boolean).join('\n');
+}
+async function pdfPageImages(doc, n) {
+  const blobs = [];
+  for (let p = 1; p <= Math.min(n, doc.numPages); p++) {
+    const page = await doc.getPage(p);
+    const base = page.getViewport({ scale: 1 });
+    const vp = page.getViewport({ scale: Math.min(2, 1400 / Math.max(base.width, base.height)) });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(vp.width);
+    canvas.height = Math.round(vp.height);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.85));
+    if (blob) blobs.push(blob);
+    page.cleanup();
+  }
+  return blobs;
+}
+function pagesCovered(parts, limit) {
+  let used = 0, n = 0;
+  for (const t of parts) {
+    used += t.length + 2;
+    if (used > limit && n > 0) break;
+    n++;
+  }
+  return n;
+}
+function pdfPanel(onCards, toList) {
+  const fileIn = h('input', { type: 'file', id: 'pdf-file', accept: 'application/pdf,.pdf', class: 'sr-only', tabindex: '-1', 'aria-hidden': 'true' });
+  const pick = h('button', { class: 'btn btn-primary', type: 'button', onclick: () => fileIn.click() }, icon('pdf', 18), 'Choose a PDF');
+  const desc = h('p', { class: 'muted small' });
+  const status = h('p', { class: 'panel-status', 'aria-live': 'polite' });
+  const claudeBtn = h('button', { class: 'btn btn-primary', type: 'button', hidden: true }, icon('notes', 16), 'Make cards with Claude');
+  const pairsBtn = h('button', { class: 'btn', type: 'button', hidden: true }, 'Find term and definition pairs');
+  const stopBtn = h('button', { class: 'btn btn-ghost', type: 'button', hidden: true }, 'Stop');
+  let text = '', images = null, ctl = null, busy = false;
+  const setStatus = (msg, isErr) => { status.textContent = msg; status.className = 'panel-status' + (isErr ? ' err' : ''); };
+  const setBusy = (b) => {
+    busy = b;
+    pick.disabled = b;
+    claudeBtn.disabled = b;
+    pairsBtn.disabled = b;
+    stopBtn.hidden = !(b && ctl);
+  };
+  const refresh = () => {
+    desc.textContent = sampleFn
+      ? 'Use class notes, a study guide or a vocabulary list. Claude picks out the key terms and writes a definition for each, using your Claude account. You can edit every card before you save.'
+      : 'This finds term and definition pairs in vocabulary lists, like “term: definition” on each line or a two-column table. You can check the pairs before adding them.';
+  };
+  async function read(file) {
+    if (busy || !file) return;
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+    if (!isPdf) { setStatus("That file isn't a PDF. Choose a file that ends in .pdf.", true); return; }
+    if (file.size > PDF_MAX_BYTES) { setStatus('That PDF is too big. Try one under 40 MB, or a single chapter.', true); return; }
+    text = '';
+    images = null;
+    claudeBtn.hidden = true;
+    pairsBtn.hidden = true;
+    setBusy(true);
+    setStatus('Opening the PDF…');
+    let doc = null;
+    try {
+      const lib = await loadPdfJs();
+      doc = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false, disableFontFace: true }).promise;
+    } catch (e) {
+      setBusy(false);
+      if (e && e.name === 'PasswordException') setStatus('This PDF is locked with a password. Unlock it first, then try again.', true);
+      else if (e && e.name === 'LoadError') setStatus("Couldn't load the PDF reader. Check your internet connection and try again.", true);
+      else setStatus("Couldn't read that PDF. It may be damaged.", true);
+      return;
+    }
+    const label = `“${file.name || 'your PDF'}”`;
+    try {
+      const total = doc.numPages;
+      const pages = Math.min(total, PDF_MAX_PAGES);
+      const parts = [];
+      for (let p = 1; p <= pages; p++) {
+        setStatus(`Reading page ${p} of ${pages}…`);
+        const page = await doc.getPage(p);
+        parts.push(await pdfPageText(page));
+        page.cleanup();
+      }
+      text = parts.filter(Boolean).join('\n\n').trim();
+      pick.className = 'btn';
+      pick.replaceChildren(icon('pdf', 18), 'Choose another PDF');
+      const more = total > pages ? ` Only the first ${pages} of ${total} pages were read.` : '';
+      if (text.replace(/\s/g, '').length < 60) {
+        let lim = null;
+        if (sampleFn && typeof sampleFn.limits === 'function') { try { lim = await sampleFn.limits(); } catch (e) { lim = null; } }
+        if (sampleFn && lim && lim.images) {
+          setStatus('This PDF looks like scanned pages. Getting them ready for Claude…');
+          images = await pdfPageImages(doc, Math.max(1, Math.min(lim.images.maxCount || 1, 5)));
+          const n = images.length;
+          const which = n === total ? (n === 1 ? 'the page as a picture' : `all ${n} pages as pictures`)
+            : (n === 1 ? 'the first page as a picture' : `the first ${n} pages as pictures`);
+          setStatus(`${label} looks like scanned pages, so Claude will read ${which}.`);
+          claudeBtn.hidden = !images.length;
+        } else {
+          setStatus(`${label} has no text to read. It may be scanned pages. Try a PDF where you can select the text.`, true);
+        }
+      } else if (!sampleFn) {
+        setStatus(`Read ${plural(pages, 'page')} from ${label}.${more}`);
+        toList(text);
+      } else {
+        const covered = pagesCovered(parts, NOTES_MAX);
+        const part = covered < parts.length ? ` Claude reads about the first ${plural(covered, 'page')}, so upload one chapter at a time for long PDFs.` : '';
+        setStatus(`Read ${plural(pages, 'page')} from ${label}.${more}${part}`);
+        claudeBtn.hidden = false;
+        pairsBtn.hidden = false;
+      }
+    } catch (e) {
+      setStatus("Couldn't read that PDF. It may be damaged.", true);
+    } finally {
+      setBusy(false);
+      try { await doc.destroy(); } catch (e) { /* ignore */ }
+    }
+  }
+  claudeBtn.addEventListener('click', async () => {
+    if (busy || !sampleFn || (!text && !images)) return;
+    ctl = new AbortController();
+    setBusy(true);
+    setStatus(images ? 'Claude is reading the pages. This can take a minute or two.' : 'Claude is reading your PDF. This can take up to a minute.');
+    const opts = { signal: ctl.signal };
+    if (images) opts.images = images;
+    const { added, error } = await streamCards(images ? notesPrompt('', true) : notesPrompt(text), opts, (arr, total) => {
+      onCards(arr);
+      setStatus(`Added ${plural(total, 'card')} so far…`);
+    });
+    ctl = null;
+    setBusy(false);
+    setStatus(claudeResultText(added, error), !!error && error.code !== 'cancelled');
+    if (error && SAMPLE_OFF.has(error.code)) claudeBtn.hidden = true;
+  });
+  pairsBtn.addEventListener('click', () => { if (text) toList(text); });
+  stopBtn.addEventListener('click', () => { if (ctl) ctl.abort(); });
+  fileIn.addEventListener('change', () => { const f = fileIn.files && fileIn.files[0]; fileIn.value = ''; read(f); });
+  const panel = h('section', { class: 'tool-panel' },
+    h('div', null, h('h3', { class: 'h3', text: 'Upload a PDF' }), desc),
+    h('div', { class: 'drop' }, pick, h('span', { class: 'muted small', text: 'or drop a PDF here' }), fileIn),
+    status,
+    h('div', { class: 'panel-actions' }, claudeBtn, pairsBtn, stopBtn));
+  panel.addEventListener('dragover', (e) => { e.preventDefault(); panel.classList.add('dragging'); });
+  panel.addEventListener('dragleave', (e) => { if (!panel.contains(e.relatedTarget)) panel.classList.remove('dragging'); });
+  panel.addEventListener('drop', (e) => {
+    e.preventDefault();
+    panel.classList.remove('dragging');
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    read(f);
+  });
+  panel.focusInput = () => pick.focus();
+  panel.refresh = refresh;
+  refresh();
   return panel;
 }
 
@@ -1653,8 +1908,9 @@ VIEWS.edit = function EditView() {
     view.original = draftKey(view.draft);
   }
   if (view.openImport) { view.panel = 'import'; view.openImport = false; view.focusPanel = true; }
+  if (view.openPdf) { view.panel = 'pdf'; view.openPdf = false; view.focusPanel = true; }
   const d = view.draft;
-  let importEl = null, notesEl = null;
+  let importEl = null, notesEl = null, pdfEl = null;
   const goBack = () => (editing ? show('set', { setId: editing.id }) : show('home'));
   const leave = async () => {
     if (draftKey(d) !== view.original) {
@@ -1677,6 +1933,7 @@ VIEWS.edit = function EditView() {
     const toggle = (name) => { view.panel = view.panel === name ? null : name; view.focusPanel = !!view.panel; drawTools(); drawPanel(); };
     toolsRow.replaceChildren(...[
       h('button', { class: 'btn btn-sm', type: 'button', 'aria-expanded': String(view.panel === 'import'), onclick: () => toggle('import') }, icon('clipboard', 16), 'Paste a list'),
+      h('button', { class: 'btn btn-sm', type: 'button', 'aria-expanded': String(view.panel === 'pdf'), onclick: () => toggle('pdf') }, icon('pdf', 16), 'Upload a PDF'),
       sampleFn ? h('button', { class: 'btn btn-sm', type: 'button', 'aria-expanded': String(view.panel === 'notes'), onclick: () => toggle('notes') }, icon('notes', 16), 'Make cards from notes') : null,
       h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: () => { for (const c of d.cards) { const t = c.t; c.t = c.d; c.d = t; } drawRows(); toast('Swapped terms and definitions'); } }, icon('swap', 16), 'Swap sides'),
     ].filter(Boolean));
@@ -1684,9 +1941,17 @@ VIEWS.edit = function EditView() {
   function drawPanel() {
     let el = null;
     if (view.panel === 'import') el = importEl || (importEl = importPanel(appendCards));
+    else if (view.panel === 'pdf') el = pdfEl || (pdfEl = pdfPanel(appendCards, pdfToList));
     else if (view.panel === 'notes' && sampleFn) el = notesEl || (notesEl = notesPanel(appendCards));
     if (el) panelSlot.replaceChildren(el); else panelSlot.replaceChildren();
     if (el && view.focusPanel) { view.focusPanel = false; setTimeout(() => el.focusInput && el.focusInput(), 30); }
+  }
+  function pdfToList(text) {
+    view.panel = 'import';
+    drawTools();
+    drawPanel();
+    if (importEl) importEl.setText(text);
+    toast('The PDF text is in Paste a list. Check the pairs, then add them.');
   }
   function updateCount() {
     const n = d.cards.filter(c => c.t.trim() || c.d.trim()).length;
@@ -1817,8 +2082,8 @@ VIEWS.edit = function EditView() {
   drawTools();
   drawPanel();
   drawRows();
-  view.onSample = () => { drawTools(); drawPanel(); };
-  if (!editing && view.panel !== 'import') setTimeout(() => { if (titleIn.isConnected) titleIn.focus(); }, 30);
+  view.onSample = () => { if (pdfEl) pdfEl.refresh(); drawTools(); drawPanel(); };
+  if (!editing && !view.panel) setTimeout(() => { if (titleIn.isConnected) titleIn.focus(); }, 30);
   return root;
 };
 
