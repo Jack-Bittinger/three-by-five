@@ -1439,6 +1439,435 @@ VIEWS.set = function SetView() {
   return root;
 };
 
+/* ================= reading notes out of PDFs ================= */
+const PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+const PDF_MAX_PAGES = 80;
+const PDF_MAX_BYTES = 40 * 1024 * 1024;
+let pdfjsPromise = null;
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = false;
+    s.onload = () => resolve();
+    s.onerror = () => reject(Object.assign(new Error('script'), { name: 'LoadError' }));
+    document.head.append(s);
+  });
+}
+function loadPdfJs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = (async () => {
+      if (!window.pdfjsLib) await loadScript(PDFJS_BASE + 'pdf.min.js');
+      if (!window.pdfjsWorker) await loadScript(PDFJS_BASE + 'pdf.worker.min.js');
+      const lib = window.pdfjsLib;
+      if (!lib) throw Object.assign(new Error('missing'), { name: 'LoadError' });
+      lib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + 'pdf.worker.min.js';
+      return lib;
+    })().catch((e) => { pdfjsPromise = null; throw e; });
+  }
+  return pdfjsPromise;
+}
+
+/* One page becomes a list of lines with their position and font size.
+   A wide gap inside a line becomes a tab, so table columns stay apart. */
+async function pdfPageLines(page) {
+  const tc = await page.getTextContent();
+  const out = [];
+  let cur = null, lastEnd = null, lastSize = 10;
+  const flush = () => {
+    if (cur) {
+      const text = cur.text.replace(/[ \u00a0]+/g, ' ').replace(/ *\t[\t ]*/g, '\t').trim();
+      if (text) out.push({ text, x: cur.x, y: cur.y, size: cur.size || lastSize, right: cur.right });
+    }
+    cur = null;
+    lastEnd = null;
+  };
+  for (const it of tc.items) {
+    if (typeof it.str !== 'string') continue;
+    const tr = it.transform || [1, 0, 0, 10, 0, 0];
+    const x = tr[4], y = tr[5];
+    const size = it.height || Math.hypot(tr[2], tr[3]) || lastSize;
+    if (it.str && !it.str.trim()) {
+      // pdf.js reports the space between table columns as one wide blank piece
+      if (cur) {
+        cur.text += (it.width || 0) > lastSize * 1.5 ? '\t' : ' ';
+        if (it.width) lastEnd = x + it.width;
+      }
+    } else if (it.str) {
+      if (cur && Math.abs(y - cur.y) > Math.min(size, lastSize) * 0.5) flush();
+      if (!cur) cur = { text: '', x, y, size: 0 };
+      else if (lastEnd !== null) {
+        const gap = x - lastEnd;
+        if (gap > size * 1.5) cur.text += '\t';
+        else if (gap > size * 0.15 && !/\s$/.test(cur.text) && !/^\s/.test(it.str)) cur.text += ' ';
+      }
+      cur.text += it.str;
+      if (/\p{L}/u.test(it.str)) cur.size = Math.max(cur.size, size);
+      lastEnd = x + (it.width || 0);
+      cur.right = lastEnd;
+      lastSize = size;
+    }
+    if (it.hasEOL) flush();
+  }
+  flush();
+  return out;
+}
+
+/* ---------- what counts as junk, a term, a heading ---------- */
+const URL_RE = /\b(?:https?:\/\/|www\.)\S+/gi;
+const BULLET_RE = /^(?:[•●○◦▪▫■□◆◇❖➢➣►▶▸➤➔→✓✔✗·∙⁃‣\u2043\u2219\uF0A7\uF0B7\uF076\uF0D8\uF0FC\uF0A8\uF0E8\uF0D2\uF0AE\uF02D-]+|\*+|o(?=\t|\s+\p{Lu})|\(?\d{1,3}[.)](?=\s)|\(?[a-zA-Z][.)](?=\s)|\(?[ivxIVX]{1,4}[.)](?=\s))\s*/u;
+const JUNK_LABELS = new Set(['name', 'names', 'student', 'student name', 'full name', 'first name', 'last name', 'date', 'due', 'due date',
+  'period', 'per', 'pd', 'class', 'class period', 'block', 'hour', 'hr', 'teacher', 'instructor', 'professor', 'course', 'grade', 'score',
+  'points', 'pts', 'total points', 'room', 'seat', 'homework', 'hw', 'assignment', 'directions', 'direction', 'instructions', 'instruction',
+  'objective', 'objectives', 'learning target', 'learning targets', 'learning goal', 'learning goals', 'learning objective', 'learning objectives',
+  'essential question', 'essential questions', 'eq', 'warm up', 'warmup', 'bell ringer', 'bellringer', 'do now', 'exit ticket', 'agenda',
+  'reminder', 'reminders', 'announcement', 'announcements', 'note', 'notes', 'source', 'sources', 'citation', 'citations', 'works cited',
+  'reference', 'references', 'standard', 'standards', 'website', 'url', 'link', 'links', 'email', 'e mail', 'phone', 'important', 'remember',
+  'tip', 'hint', 'nb', 'title', 'swbat']);
+const GENERIC_TERMS = new Set([...JUNK_LABELS, 'term', 'terms', 'word', 'words', 'word bank', 'vocabulary', 'vocab', 'key terms', 'key vocabulary',
+  'definition', 'definitions', 'meaning', 'meanings', 'question', 'questions', 'answer', 'answers', 'summary', 'review', 'main idea', 'main ideas',
+  'topic', 'unit', 'chapter', 'lesson', 'page', 'example', 'examples', 'ex', 'eg', 'e g', 'for example', 'picture', 'image', 'diagram', 'video',
+  'cause', 'causes', 'effect', 'effects', 'result', 'results', 'reason', 'reasons', 'impact', 'impacts', 'significance', 'why it matters',
+  'importance', 'who', 'what', 'when', 'where', 'why', 'how', 'details', 'detail', 'description', 'fact', 'facts', 'info', 'information',
+  'key points', 'key point', 'key idea', 'key ideas', 'big idea', 'purpose', 'goal', 'goals', 'problem', 'solution', 'pros', 'cons',
+  'advantages', 'disadvantages', 'similarities', 'differences', 'conclusion', 'introduction', 'intro', 'background', 'context', 'location',
+  'time period', 'dates', 'people', 'key people', 'key events', 'events', 'quote', 'quotes', 'overview', 'outline', 'study guide',
+  'q', 'a', 'ans']);
+const QA_START_RE = /^(?:q|question|a|ans|answer)\s*\d*\s*[:.)]\s*\S/i;
+const LABEL_NUM_RE = /^(?:chapter|ch|unit|lesson|section|module|week|period|page|slide)\.?\s*\d/i;
+const DETAIL_LABEL_RE = /^(e\.?g\.?|ex\.?|examples?|for example|significance|importance|why it matters|impact|effects?|results?|causes?|purpose)\s*[:\-–—]\s*(.+)$/i;
+const NUMBERED_LABEL_RE = /^(?:chapter|ch|unit|lesson|section|sec|part|module|topic|week|day|page|pg|p|slide|figure|fig|table|quiz|test|exam|lecture|period|activity|step|problem|question|q|answer|ans|exercise|lab)\.?\s*[\divxlcIVXLC][\d.]*[a-z]?$/i;
+const GENERIC_HEADING_RE = /\b(notes?|review|vocab(?:ulary)?|key terms|study guide|overview|introduction|intro|agenda|objectives?|summary|outline|warm[- ]?up|homework|directions|contents|worksheet|guided|quiz|test|exam|chapter|unit|lesson|questions)\b/i;
+const VERB_RE = /\b(is|are|was|were|be|been|being|has|have|had|do|does|did|will|would|can|could|should|shall|may|might|must)\b/i;
+const END_WORD_RE = /\b(the|a|an|of|to|and|or|in|on|for|with|by|at|from|as|that|which|who|is|are|was|were|be|but|if|than|then|so)$/i;
+const OPENER_RE = /^(it|its|this|that|these|those|they|their|there|here|he|she|his|her|we|our|you|your|i|my|each|some|many|most|both|another|such|which|what|who|why|how|when|where|if|but|because|however|therefore|also|then)\b/i;
+const CLAUSE_RE = /\b(that|which|who|whom|whose|when|where|while|because|although|if|since)\b/i;
+const MONTH_DATE_RE = /^(?:(?:mon|tues|wednes|thurs|fri|satur|sun)day,?\s*)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:st|nd|rd|th)?,?\s*(?:\d{4})?$/i;
+
+function median(arr) {
+  if (!arr.length) return 0;
+  const a = arr.slice().sort((x, y) => x - y);
+  return a[Math.floor(a.length / 2)];
+}
+const lineKey = (s) => s.toLowerCase().replace(/\d+/g, '#').replace(/\s+/g, ' ').trim();
+const wordCount = (s) => (s.trim() ? s.trim().split(/\s+/).length : 0);
+
+function isJunkLine(raw) {
+  const s = raw.replace(/\t/g, ' ').trim();
+  if (!/\p{L}/u.test(s)) return true;
+  if (/^(?:page|pg\.?|p\.|slide)\s*\d+(?:\s*(?:of|\/)\s*\d+)?$/i.test(s)) return true;
+  if (/^(?:period|per|pd|block|hour|room)\s*#?\s*\d+[a-z]?$/i.test(s)) return true;
+  if (MONTH_DATE_RE.test(s)) return true;
+  if (/©|\(c\)\s*\d{4}|copyright|all rights reserved|teacherspayteachers|^(?:created|made|downloaded|printed|adapted|taken)\s+(?:by|with|from)\b/i.test(s)) return true;
+  if (/^(?:i can|swbat|students will)\b/i.test(s)) return true;
+  if (/^(?:[Mm]rs?|[Mm]s|[Mm]iss|[Dd]r|[Pp]rof|[Pp]rofessor|[Cc]oach)\.?\s+\p{Lu}[\p{L}'’-]+(?:\s+\p{Lu}[\p{L}'’-]+)?$/u.test(s)) return true;
+  if (wordCount(s) <= 8 && /\b(?:period|pd|block|hour)\.?\s*\d{1,2}\b/i.test(s)) return true;
+  if (/_{3,}/.test(s) && (s.match(/\p{L}/gu) || []).length < 25) return true;
+  if (!s.replace(URL_RE, '').replace(/[\s\p{P}]/gu, '')) return true;
+  const lab = /^([\p{L}][\p{L} .'-]{0,28}?)\s*[:#\-–]\s*/u.exec(s);
+  if (lab && JUNK_LABELS.has(norm(lab[1]))) return true;
+  return false;
+}
+function cleanLine(raw) {
+  return raw.replace(URL_RE, ' ').replace(/_{3,}/g, ' ').replace(/[ \u00a0]+/g, ' ').replace(/ *\t */g, '\t').trim();
+}
+function termOK(t, kind) {
+  const s = t.trim();
+  if (s.length < 1 || s.length > 80) return false;
+  if (!/\p{L}/u.test(s)) return /^\d{3,4}s?$/.test(s);
+  const n = wordCount(s);
+  if (n > (kind === 'sentence' ? 6 : 8)) return false;
+  if (VERB_RE.test(s) || END_WORD_RE.test(s) || OPENER_RE.test(s)) return false;
+  if (kind === 'sentence' && (CLAUSE_RE.test(s) || /,/.test(s))) return false;
+  if (kind === 'dash' && /^(?:the|a|an)\s+\p{Ll}/u.test(s)) return false;
+  const k = norm(s);
+  if (GENERIC_TERMS.has(k) || NUMBERED_LABEL_RE.test(s)) return false;
+  if (GENERIC_HEADING_RE.test(s) && /\d/.test(s)) return false;
+  return true;
+}
+function questionOK(t) {
+  const n = wordCount(t);
+  return /\?$/.test(t) && n >= 2 && n <= 25 && /\p{L}/u.test(t);
+}
+function defOK(d) {
+  const s = d.replace(URL_RE, '').replace(/_{2,}/g, '').trim();
+  return (s.match(/\p{L}/gu) || []).length >= 2 && !LABEL_NUM_RE.test(s);
+}
+/* Finds "term: definition", "term - definition", "term<TAB>definition", "term = definition" or "Question? Answer". */
+function splitTerm(text) {
+  const s = text;
+  const cands = [];
+  const tab = s.indexOf('\t');
+  if (tab > 0) cands.push({ i: tab, len: 1, kind: 'tab' });
+  const lim = Math.min(s.length, 160);
+  for (let i = 1; i < lim; i++) {
+    const ch = s[i], prev = s[i - 1], next = s[i + 1] || '';
+    if (ch === ':') {
+      if (/\d/.test(prev) && /\d/.test(next)) continue;
+      if (next === '/' && s[i + 2] === '/') continue;
+      cands.push({ i, len: 1, kind: 'colon' });
+    } else if (ch === '\u2013' || ch === '\u2014') cands.push({ i, len: 1, kind: 'dash' });
+    else if (ch === '-' && prev === ' ' && next === ' ') cands.push({ i, len: 1, kind: 'dash' });
+    else if (ch === '=' && prev === ' ') cands.push({ i, len: 1, kind: 'equals' });
+    else if (ch === '\u2192') cands.push({ i, len: 1, kind: 'arrow' });
+    else if (ch === '>' && prev === '-' && s[i - 2] === ' ') cands.push({ i: i - 1, len: 2, kind: 'arrow' });
+    else if (ch === '?' && /\s/.test(next)) cands.push({ i: i + 1, len: 0, kind: 'question' });
+  }
+  cands.sort((a, b) => a.i - b.i);
+  for (const c of cands) {
+    const t = s.slice(0, c.i).replace(/\t/g, ' ').trim();
+    const d = s.slice(c.i + c.len).trim();
+    if ((c.kind === 'question' ? questionOK(t) : termOK(t, c.kind)) && defOK(d)) return { t, d, kind: c.kind };
+  }
+  return null;
+}
+function isHeadingLine(text, line, body) {
+  if (wordCount(text) > 14 || splitTerm(text)) return false;
+  if (line.size >= body * 1.18) return true;
+  const letters = text.replace(/[^\p{L}]/gu, '');
+  return letters.length >= 4 && wordCount(text) <= 10 && letters === letters.toUpperCase() && letters !== letters.toLowerCase() && !/[.!]$/.test(text);
+}
+function joinText(a, b) {
+  if (/\p{L}-$/u.test(a) && /^\p{Ll}/u.test(b)) return a.slice(0, -1) + b;
+  return a + (/\s$/.test(a) ? '' : ' ') + b;
+}
+
+/* Turns the lines of every page into headings and entries: bullets, paragraphs and
+   wrapped lines joined back together, with repeated headers, footers and page numbers removed. */
+function buildItems(pages) {
+  const counts = new Map();
+  if (pages.length >= 2) {
+    for (const lines of pages) {
+      const seen = new Set();
+      for (const l of lines.slice(0, 3).concat(lines.slice(-3))) {
+        const k = lineKey(l.text);
+        if (k && !seen.has(k)) { seen.add(k); counts.set(k, (counts.get(k) || 0) + 1); }
+      }
+    }
+  }
+  const minRepeat = Math.max(2, Math.ceil(pages.length * 0.5));
+  const repeated = (l) => pages.length >= 2 && (counts.get(lineKey(l.text)) || 0) >= minRepeat;
+  const sizes = [], gaps = [];
+  for (const lines of pages) {
+    lines.forEach((l, i) => {
+      for (let k = 0; k < Math.min(l.text.length, 400); k += 25) sizes.push(l.size);
+      if (i) { const g = (lines[i - 1].y - l.y) / l.size; if (g > 0.6 && g < 4) gaps.push(g); }
+    });
+  }
+  const body = median(sizes) || 11;
+  const lineGap = median(gaps) || 1.2;
+  // the tightest common line spacing is the spacing inside a paragraph or bullet
+  const sortedGaps = gaps.slice().sort((a, b) => a - b);
+  const tight = sortedGaps.length ? sortedGaps[Math.floor((sortedGaps.length - 1) * 0.15)] : lineGap;
+  // where full lines end on each page, to spot lines that stop early on purpose
+  for (const lines of pages) {
+    const rights = lines.filter(l => wordCount(l.text) >= 4 && l.right).map(l => l.right).sort((a, b) => a - b);
+    const edge = rights.length ? rights[Math.floor((rights.length - 1) * 0.9)] : Math.max(0, ...lines.map(l => l.right || 0));
+    for (const l of lines) {
+      l.edge = edge;
+      l.cw = l.right && l.text.length ? Math.max(1, (l.right - l.x) / l.text.length) : l.size * 0.5;
+    }
+  }
+  const items = [];
+  let cur = null;
+  const close = () => { if (cur) { items.push(cur); cur = null; } };
+  for (const lines of pages) {
+    let prev = null;
+    lines.forEach((l, idx) => {
+      const gap = prev ? (prev.y - l.y) / l.size : null;
+      prev = l;
+      if (repeated(l) || isJunkLine(l.text)) return;
+      // small print at the very top or bottom of a page is a header or footer
+      if ((idx < 2 || idx >= lines.length - 2) && l.size < body * 0.88) return;
+      const text = cleanLine(l.text);
+      if (!text) return;
+      const para = gap !== null && (gap > lineGap * 1.45 || gap < -0.5);
+      if ((l.size >= body * 1.18 && wordCount(text) <= 14) || isHeadingLine(text, l, body)) {
+        close();
+        items.push({ kind: 'heading', text: text.replace(/\t/g, ' ').replace(/[\s:]+$/, ''), x: l.x });
+        return;
+      }
+      const m = BULLET_RE.exec(text);
+      if (m && m[0].length < text.length && /\p{L}|\d/u.test(text.slice(m[0].length))) {
+        close();
+        cur = { kind: 'entry', text: text.slice(m[0].length).trim(), x: l.x, bullet: true, last: l };
+        return;
+      }
+      if (cur && !para && !QA_START_RE.test(text)) {
+        const termLine = !!splitTerm(text);
+        const ended = /[.!?]["'”’)]*$/.test(cur.text);
+        const atEdge = l.x <= cur.x + 2;
+        // the previous line stopped early even though this line's first word would have fit there
+        const last = cur.last;
+        const firstWord = text.split(/\s/)[0] || '';
+        const room = last && last.right ? last.edge - last.right : 0;
+        const brokeEarly = room > (firstWord.length + 1) * last.cw + last.size * 0.5;
+        // a little extra space above the line, like the space between list items
+        const looseGap = gap !== null && gap > tight * 1.06 && (gap - tight) * l.size > 1.2;
+        const newItem = (termLine && (ended || atEdge)) || ((brokeEarly || looseGap) && /^[\p{Lu}\d"“'‘(]/u.test(text));
+        if (!newItem) { cur.text = joinText(cur.text, text); cur.last = l; return; }
+      }
+      close();
+      cur = { kind: 'entry', text, x: l.x, bullet: false, last: l };
+    });
+  }
+  close();
+  return items;
+}
+
+/* Clean text for Claude: headings marked, bullets kept, junk gone. */
+function itemsToText(items) {
+  const xs = items.filter(it => it.kind === 'entry').map(it => it.x);
+  const base = xs.length ? Math.min(...xs) : 0;
+  return items.map((it) => {
+    const t = it.text.replace(/\t+/g, ' : ');
+    if (it.kind === 'heading') return '\n## ' + t;
+    const indent = it.x > base + 30 ? '    ' : '';
+    return indent + (it.bullet || it.x > base + 4 ? '- ' : '') + t;
+  }).join('\n').trim();
+}
+
+const ABBR_RE = /^(?:mr|mrs|ms|dr|st|jr|sr|vs|etc|e\.g|i\.e|u\.s|u\.k|no|vol|fig|approx|ca|c|b\.c|a\.d|gen|gov|sen|rep|pres|capt|col|lt|sgt|mt|ft|inc|co|ltd|dept|univ|p|pp)\.$/i;
+function sentences(text) {
+  const out = [];
+  const re = /[.!?]["'”’)]*\s+(?=["“'‘(]?[\p{Lu}\d])/gu;
+  let start = 0, m;
+  while ((m = re.exec(text))) {
+    const head = text.slice(start, m.index + 1);
+    const lastWord = head.slice(head.lastIndexOf(' ') + 1);
+    if (ABBR_RE.test(lastWord) || /^\p{Lu}\.$/u.test(lastWord)) continue;
+    out.push(text.slice(start, m.index + m[0].length).trim());
+    start = m.index + m[0].length;
+  }
+  const rest = text.slice(start).trim();
+  if (rest) out.push(rest);
+  return out;
+}
+const DEF_STRONG_RE = /^(.{2,70}?)\s+(?:refers? to|means|is defined as|are defined as|is the term for|is the name for)\s+(.+)$/i;
+const DEF_IS_RE = /^(.{2,70}?)\s+(?:is|are|was|were)\s+((?:a|an|the|one of the|any of the)\s.+)$/i;
+/* "Federalism is the division of power..." becomes Federalism / The division of power... */
+function defSentence(s) {
+  const text = s.replace(/\t/g, ' ').trim();
+  let m = DEF_STRONG_RE.exec(text), strong = true;
+  if (!m) { m = DEF_IS_RE.exec(text); strong = false; }
+  if (!m) return null;
+  const t = m[1].trim().replace(/^(?:the|a|an)\s+(?=\p{Ll})/iu, '');
+  if (!termOK(t, 'sentence')) return null;
+  if (wordCount(m[2]) < (strong ? 3 : 5)) return null;
+  return { t: t.charAt(0).toUpperCase() + t.slice(1), d: m[2] };
+}
+function asSentence(s) {
+  let t = s.replace(/\t+/g, ' ').replace(/\s+/g, ' ').trim().replace(/[\s:;,]+$/, '');
+  if (!t) return '';
+  t = t.charAt(0).toUpperCase() + t.slice(1);
+  return /[.!?]["'”’)]*$/.test(t) ? t : t + '.';
+}
+function cutAtSentence(s, max) {
+  if (s.length <= max) return s;
+  const head = s.slice(0, max);
+  const end = Math.max(head.lastIndexOf('. '), head.lastIndexOf('! '), head.lastIndexOf('? '));
+  return end > max * 0.4 ? head.slice(0, end + 1) : head.slice(0, head.lastIndexOf(' ')) + '\u2026';
+}
+function cleanTerm(t) {
+  return String(t).replace(/\t+/g, ' ').replace(/\s+/g, ' ').trim()
+    .replace(/^[*_"“”]+|[*_"“”]+$/g, '').replace(/\s*[:\-–—=,;]+$/, '').trim().slice(0, 200);
+}
+function cleanDef(d) {
+  let s = String(d).replace(URL_RE, ' ').replace(/_{2,}/g, ' ').replace(/\t+/g, ' ').replace(/\s+/g, ' ').trim();
+  s = s.replace(/^[\s:\-–—=,;.]+/, '').replace(/[\s,;:]+$/, '');
+  if ((s.match(/\p{L}/gu) || []).length < 2) return '';
+  s = s.charAt(0).toUpperCase() + s.slice(1);
+  return cutAtSentence(s, 600);
+}
+function parentOK(it) {
+  const t = it.text.replace(/\t/g, ' ').replace(/[\s:]+$/, '').trim();
+  if (!t || /[.!]$/.test(t) || !/\p{L}/u.test(t)) return false;
+  if (it.kind === 'entry' && splitTerm(it.text)) return false;
+  const n = wordCount(t);
+  if (/\?$/.test(t)) return n <= 20;
+  if (n > (it.kind === 'heading' ? 12 : 8) || t.length > 90) return false;
+  if (GENERIC_TERMS.has(norm(t)) || NUMBERED_LABEL_RE.test(t) || GENERIC_HEADING_RE.test(t) || OPENER_RE.test(t) || VERB_RE.test(t)) return false;
+  return true;
+}
+function childrenOf(items, i) {
+  const p = items[i];
+  const label = p.kind === 'entry' && /:$/.test(p.text) && !p.bullet;
+  const out = [];
+  for (let j = i + 1; j < items.length && out.length <= 6; j++) {
+    const c = items[j];
+    if (c.kind === 'heading') break;
+    if (p.kind === 'heading' || c.x > p.x + 4 || (label && c.bullet)) out.push(j);
+    else break;
+  }
+  return out;
+}
+
+/* The cards: term/definition lines, outlines (a short line with notes under it),
+   question-and-answer pairs and sentences that define something. */
+function cardsFromItems(items) {
+  const cards = [], seen = new Set(), used = new Set();
+  let lastFrom = -2;
+  const add = (t, d, at) => {
+    t = cleanTerm(t);
+    d = cleanDef(d);
+    const k = norm(t);
+    if (!t || !d || !k || seen.has(k) || norm(d) === k) return false;
+    seen.add(k);
+    cards.push({ t, d });
+    lastFrom = at;
+    return true;
+  };
+  const hasDefSentence = (k) => !splitTerm(items[k].text) && sentences(items[k].text).some(s => defSentence(s));
+  for (let i = 0; i < items.length && cards.length < 200; i++) {
+    if (used.has(i)) continue;
+    const it = items[i];
+    const kids = childrenOf(items, i);
+    if (kids.length && kids.length <= 6 && parentOK(it)) {
+      // Merge only plain notes. Lines that are terms themselves, or sub-terms with their own notes, become their own cards.
+      const covered = new Set();
+      let plain = 0, termish = 0;
+      for (const k of kids) {
+        if (covered.has(k)) continue;
+        const sub = childrenOf(items, k);
+        if (splitTerm(items[k].text)) termish++;
+        else if (sub.length && parentOK(items[k])) { termish++; sub.forEach(c => covered.add(c)); }
+        else if (!DETAIL_LABEL_RE.test(items[k].text)) plain++;
+      }
+      const text = kids.map(k => asSentence(items[k].text)).join(' ');
+      if (plain > 0 && plain >= termish && !kids.some(hasDefSentence) && text.length <= 700 && add(it.text, text, kids[kids.length - 1])) {
+        kids.forEach(k => used.add(k));
+        continue;
+      }
+    }
+    if (it.kind === 'heading') continue;
+    const q = /^(?:q|question)\s*\d*\s*[:.)\-]\s*(.+)$/i.exec(it.text);
+    const a = q && items[i + 1] && items[i + 1].kind === 'entry' ? /^(?:a|ans|answer)\s*\d*\s*[:.)\-]\s*(.+)$/i.exec(items[i + 1].text) : null;
+    if (q && a) { add(q[1], a[1], i + 1); used.add(i + 1); continue; }
+    const qa = /^(?:q|question)\s*\d*\s*[:.)\-]\s*(.+?)\s+(?:a|ans|answer)\s*[:.)\-]\s*(.+)$/i.exec(it.text);
+    if (qa) { add(qa[1], qa[2], i); continue; }
+    if (q) continue;
+    const det = DETAIL_LABEL_RE.exec(it.text.replace(/\t/g, ' '));
+    if (det) {
+      // "Example: ..." or "Significance: ..." right after a card belongs to that card
+      if (lastFrom === i - 1 && cards.length) {
+        const last = cards[cards.length - 1];
+        const isEx = /^(?:e\.?g|ex|example|for example)/i.test(det[1]);
+        const label = isEx ? 'Example' : det[1].charAt(0).toUpperCase() + det[1].slice(1).toLowerCase();
+        last.d = cutAtSentence(asSentence(last.d) + ' ' + asSentence(label + ': ' + det[2].trim()), 700);
+        lastFrom = i;
+      }
+      continue;
+    }
+    const sp = splitTerm(it.text);
+    if (sp) { add(sp.t, sp.d, i); continue; }
+    for (const s of sentences(it.text)) {
+      const dm = defSentence(s);
+      if (dm) add(dm.t, dm.d, i);
+    }
+  }
+  return cards;
+}
+
 /* ================= create / edit ================= */
 const blankCard = () => ({ id: rid('c'), t: '', d: '' });
 const draftKey = (d) => JSON.stringify([d.title, d.desc, d.cards.map(c => [c.t, c.d])]);
@@ -1546,15 +1975,6 @@ function importPanel(onAdd) {
     preview,
     h('div', { class: 'panel-actions' }, addBtn));
   panel.focusInput = () => ta.focus();
-  panel.setText = (t) => {
-    ta.value = t;
-    st.picked = false;
-    st.card = 'line';
-    customCardIn.hidden = true;
-    drawSegs();
-    update();
-    customTermIn.hidden = st.term !== 'custom';
-  };
   return panel;
 }
 function bestSep(text) {
@@ -1584,16 +2004,27 @@ function notesPrompt(notes, fromImages) {
   const src = fromImages ? 'pages' : 'notes';
   return [
     fromImages
-      ? "The attached images are pages from a student's handout, notes or textbook. Turn them into study flashcards."
-      : "You turn a student's notes into study flashcards.",
-    `Make one card for each key term, person, place, date, event, formula or idea in the ${src}.`,
-    'Rules:',
-    '- "term": short, 1 to 6 words (the word, name, date or idea).',
-    `- "definition": one clear phrase or sentence under 25 words, based only on the ${src}.`,
-    `- Write in the same language as the ${src}. Skip filler. No duplicate cards. At most 60 cards.`,
-    '- Reply with one JSON object per line and nothing else: no numbering, no code fences, no other text.',
-    'Example line:',
-    '{"term":"Mitochondria","definition":"Organelle that turns food into energy (ATP) for the cell"}',
+      ? "The attached images are pages of a student's class notes, slides, handout or textbook."
+      : "Below are a student's class notes, slides, handout or part of a textbook.",
+    'Turn them into flashcards the student can use to study for a quiz or test.',
+    '',
+    'Which cards to make:',
+    '- Only make cards for real course content a teacher could ask about: key terms, vocabulary, people, events, laws, places, dates, processes, causes and effects, formulas and main ideas.',
+    '- Skip everything else: titles and headings by themselves, the names of the student or teacher, class periods, the date the notes were taken, page and slide numbers, headers and footers, directions, homework and due dates, links, learning objectives, "I can" statements, essential questions, reminders and filler.',
+    '- Skip details too small or vague to be worth a card. Make one card per idea, with no repeats.',
+    '',
+    'How to write each card:',
+    `- "term": the key word, name, date or short phrase, 1 to 6 words, spelled as in the ${src}.`,
+    `- "definition": 1 or 2 complete sentences, about 15 to 40 words, that explain what it is and why it matters, using the details in the ${src}. Every sentence must be finished and make sense on its own.`,
+    `- If the ${src} already define a term, keep that meaning and as much of the wording as you can, but finish any fragments into complete sentences.`,
+    '- Do not use the term itself in its definition, because the definition is shown as the quiz question. Say "this" or "it" instead.',
+    `- Stick to what the ${src} say. Add a few words of common knowledge only when a sentence needs it to make sense.`,
+    `- Use the same language as the ${src}. Make at most 60 cards, in the order the ideas appear.`,
+    '',
+    'Reply with one JSON object per line and nothing else: no numbering, no code fences and no other text.',
+    'Example lines:',
+    '{"term":"Stamp Act","definition":"This 1765 British law taxed printed materials in the colonies, like newspapers and legal papers. Colonists protested it as taxation without representation."}',
+    '{"term":"Mitochondria","definition":"These organelles break down food to release energy the cell can use. They are often called the powerhouse of the cell."}',
     ...(fromImages ? [] : ['', 'Notes:', '"""', notes.slice(0, NOTES_MAX), '"""']),
   ].join('\n');
 }
@@ -1634,23 +2065,26 @@ function claudeResultText(added, error) {
     ? `Done. Added ${plural(added, 'card')} below. Read them over before you save.`
     : 'No cards came back. Try notes with clear terms and facts.';
 }
-function notesPanel(onCards) {
+function notesPanel(api) {
   const ta = h('textarea', { class: 'field', id: 'notes-text', rows: 8, maxlength: 30000, placeholder: 'Paste class notes, a study guide or part of a textbook chapter.' });
   const status = h('p', { class: 'panel-status', 'aria-live': 'polite' });
   const go = h('button', { class: 'btn btn-primary', type: 'button' }, icon('notes', 16), 'Make cards');
   const stop = h('button', { class: 'btn btn-ghost', type: 'button', hidden: true }, 'Stop');
-  let ctl = null;
+  const undo = h('button', { class: 'btn btn-ghost', type: 'button', hidden: true }, icon('undo', 16), 'Remove these cards');
+  let ctl = null, lastIds = [];
   go.addEventListener('click', async () => {
     const notes = ta.value.trim();
     status.className = 'panel-status';
     if (notes.length < 40) { status.textContent = 'Paste a little more text first, at least a few sentences.'; return; }
     if (!sampleFn) { status.textContent = sampleErrorText('capability_disabled'); return; }
     ctl = new AbortController();
+    lastIds = [];
     go.disabled = true;
     stop.hidden = false;
-    status.textContent = 'Claude is reading your notes. This can take up to a minute.';
+    undo.hidden = true;
+    status.textContent = 'Claude is reading your notes and picking out what matters. This can take up to a minute.';
     const { added, error } = await streamCards(notesPrompt(notes), { signal: ctl.signal }, (arr, total) => {
-      onCards(arr);
+      lastIds = lastIds.concat(api.add(arr));
       status.textContent = `Added ${plural(total, 'card')} so far…`;
     });
     status.textContent = claudeResultText(added, error);
@@ -1658,89 +2092,30 @@ function notesPanel(onCards) {
     if (error && SAMPLE_OFF.has(error.code)) go.hidden = true;
     go.disabled = false;
     stop.hidden = true;
+    undo.hidden = !lastIds.length;
     ctl = null;
   });
   stop.addEventListener('click', () => { if (ctl) ctl.abort(); });
+  undo.addEventListener('click', () => {
+    const n = lastIds.length;
+    api.remove(lastIds);
+    lastIds = [];
+    undo.hidden = true;
+    status.className = 'panel-status';
+    status.textContent = `Removed ${plural(n, 'card')}.`;
+  });
   const panel = h('section', { class: 'tool-panel' },
     h('div', null,
       h('h3', { class: 'h3', text: 'Make cards from notes' }),
-      h('p', { class: 'muted small', text: 'Claude picks out the key terms and writes a short definition for each. It runs on your own Claude account. You can edit every card before you save.' })),
+      h('p', { class: 'muted small', text: 'Claude picks out what is worth studying and writes a full definition for each. It runs on your own Claude account. You can edit every card before you save.' })),
     h('label', { class: 'sr-only', for: 'notes-text', text: 'Your notes' }), ta,
-    h('div', { class: 'panel-actions' }, go, stop),
+    h('div', { class: 'panel-actions' }, go, stop, undo),
     status);
   panel.focusInput = () => ta.focus();
   return panel;
 }
 
-/* ---------- reading PDFs (pdf.js loads only when someone picks a PDF) ---------- */
-const PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
-const PDF_MAX_PAGES = 80;
-const PDF_MAX_BYTES = 40 * 1024 * 1024;
-let pdfjsPromise = null;
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = src;
-    s.async = false;
-    s.onload = () => resolve();
-    s.onerror = () => reject(Object.assign(new Error('script'), { name: 'LoadError' }));
-    document.head.append(s);
-  });
-}
-function loadPdfJs() {
-  if (!pdfjsPromise) {
-    pdfjsPromise = (async () => {
-      if (!window.pdfjsLib) await loadScript(PDFJS_BASE + 'pdf.min.js');
-      if (!window.pdfjsWorker) await loadScript(PDFJS_BASE + 'pdf.worker.min.js');
-      const lib = window.pdfjsLib;
-      if (!lib) throw Object.assign(new Error('missing'), { name: 'LoadError' });
-      lib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + 'pdf.worker.min.js';
-      return lib;
-    })().catch((e) => { pdfjsPromise = null; throw e; });
-  }
-  return pdfjsPromise;
-}
-/* Rebuilds lines from the positioned text pieces on a page. A wide gap inside a line becomes a tab,
-   so two-column vocabulary tables turn into "term<TAB>definition" rows. */
-async function pdfPageText(page) {
-  const tc = await page.getTextContent();
-  const lines = [];
-  let line = '', lastY = null, lastEnd = null, lastSize = 10;
-  for (const it of tc.items) {
-    if (typeof it.str !== 'string') continue;
-    const tr = it.transform || [1, 0, 0, 10, 0, 0];
-    const x = tr[4], y = tr[5];
-    const size = it.height || Math.abs(tr[3]) || lastSize;
-    if (it.str && !it.str.trim()) {
-      // pdf.js reports the space between columns as one wide blank piece
-      if (line) line += (it.width || 0) > lastSize * 1.5 ? '\t' : ' ';
-      if (it.width) lastEnd = x + it.width;
-    } else if (it.str) {
-      if (lastY !== null && Math.abs(y - lastY) > size * 0.5) {
-        if (line.trim()) lines.push(line);
-        line = '';
-        lastEnd = null;
-      }
-      if (line && lastEnd !== null) {
-        const gap = x - lastEnd;
-        if (gap > size * 1.5) line += '\t';
-        else if (gap > size * 0.15 && !/\s$/.test(line) && !/^\s/.test(it.str)) line += ' ';
-      }
-      line += it.str;
-      lastEnd = x + (it.width || 0);
-      lastY = y;
-      lastSize = size;
-    }
-    if (it.hasEOL) {
-      if (line.trim()) lines.push(line);
-      line = '';
-      lastY = null;
-      lastEnd = null;
-    }
-  }
-  if (line.trim()) lines.push(line);
-  return lines.map(l => l.replace(/[  ]+/g, ' ').replace(/ *\t[\t ]*/g, '\t').trim()).filter(Boolean).join('\n');
-}
+/* ---------- Upload a PDF ---------- */
 async function pdfPageImages(doc, n) {
   const blobs = [];
   for (let p = 1; p <= Math.min(n, doc.numPages); p++) {
@@ -1760,46 +2135,49 @@ async function pdfPageImages(doc, n) {
   }
   return blobs;
 }
-function pagesCovered(parts, limit) {
-  let used = 0, n = 0;
-  for (const t of parts) {
-    used += t.length + 2;
-    if (used > limit && n > 0) break;
-    n++;
-  }
-  return n;
-}
-function pdfPanel(onCards, toList) {
+function pdfPanel(api) {
   const fileIn = h('input', { type: 'file', id: 'pdf-file', accept: 'application/pdf,.pdf', class: 'sr-only', tabindex: '-1', 'aria-hidden': 'true' });
   const pick = h('button', { class: 'btn btn-primary', type: 'button', onclick: () => fileIn.click() }, icon('pdf', 18), 'Choose a PDF');
   const desc = h('p', { class: 'muted small' });
   const status = h('p', { class: 'panel-status', 'aria-live': 'polite' });
   const claudeBtn = h('button', { class: 'btn btn-primary', type: 'button', hidden: true }, icon('notes', 16), 'Make cards with Claude');
-  const pairsBtn = h('button', { class: 'btn', type: 'button', hidden: true }, 'Find term and definition pairs');
+  const quickBtn = h('button', { class: 'btn', type: 'button', hidden: true }, 'Find terms without Claude');
   const stopBtn = h('button', { class: 'btn btn-ghost', type: 'button', hidden: true }, 'Stop');
-  let text = '', images = null, ctl = null, busy = false;
+  const undoBtn = h('button', { class: 'btn btn-ghost', type: 'button', hidden: true }, icon('undo', 16), 'Remove these cards');
+  let got = null, ctl = null, busy = false, lastIds = [];
   const setStatus = (msg, isErr) => { status.textContent = msg; status.className = 'panel-status' + (isErr ? ' err' : ''); };
   const setBusy = (b) => {
     busy = b;
     pick.disabled = b;
     claudeBtn.disabled = b;
-    pairsBtn.disabled = b;
+    quickBtn.disabled = b;
     stopBtn.hidden = !(b && ctl);
+    if (b) undoBtn.hidden = true;
   };
   const refresh = () => {
     desc.textContent = sampleFn
-      ? 'Use class notes, a study guide or a vocabulary list. Claude picks out the key terms and writes a definition for each, using your Claude account. You can edit every card before you save.'
-      : 'This finds term and definition pairs in vocabulary lists, like “term: definition” on each line or a two-column table. You can check the pairs before adding them.';
+      ? 'Use class notes, slides, a study guide or a vocabulary list. Claude picks out what is worth studying and writes a full definition for each, using your Claude account. You can edit every card before you save.'
+      : 'Works with class notes, slides, study guides and vocabulary lists, like “term: definition” lines, bulleted outlines and two-column tables. Headers, names, dates and directions are skipped. You can edit every card before you save.';
   };
+  function quickFind(extra) {
+    const cards = cardsFromItems(got.items);
+    if (!cards.length) {
+      setStatus(`Couldn't find terms with definitions in ${got.label}. This works best with vocabulary lists and notes written like “term: definition” or as bulleted outlines.` + (sampleFn ? ' Try Make cards with Claude instead.' : ''), true);
+      return;
+    }
+    lastIds = api.add(cards);
+    setStatus(`Added ${plural(cards.length, 'card')} from ${got.label}.${extra || ''} Look them over and delete any you don't need.`);
+    undoBtn.hidden = false;
+  }
   async function read(file) {
     if (busy || !file) return;
     const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
     if (!isPdf) { setStatus("That file isn't a PDF. Choose a file that ends in .pdf.", true); return; }
     if (file.size > PDF_MAX_BYTES) { setStatus('That PDF is too big. Try one under 40 MB, or a single chapter.', true); return; }
-    text = '';
-    images = null;
+    got = null;
+    lastIds = [];
     claudeBtn.hidden = true;
-    pairsBtn.hidden = true;
+    quickBtn.hidden = true;
     setBusy(true);
     setStatus('Opening the PDF…');
     let doc = null;
@@ -1816,43 +2194,45 @@ function pdfPanel(onCards, toList) {
     const label = `“${file.name || 'your PDF'}”`;
     try {
       const total = doc.numPages;
-      const pages = Math.min(total, PDF_MAX_PAGES);
-      const parts = [];
-      for (let p = 1; p <= pages; p++) {
-        setStatus(`Reading page ${p} of ${pages}…`);
+      const n = Math.min(total, PDF_MAX_PAGES);
+      const pages = [];
+      for (let p = 1; p <= n; p++) {
+        setStatus(`Reading page ${p} of ${n}…`);
         const page = await doc.getPage(p);
-        parts.push(await pdfPageText(page));
+        pages.push(await pdfPageLines(page));
         page.cleanup();
       }
-      text = parts.filter(Boolean).join('\n\n').trim();
       pick.className = 'btn';
       pick.replaceChildren(icon('pdf', 18), 'Choose another PDF');
-      const more = total > pages ? ` Only the first ${pages} of ${total} pages were read.` : '';
-      if (text.replace(/\s/g, '').length < 60) {
+      const more = total > n ? ` Only the first ${n} of ${total} pages were read.` : '';
+      const items = buildItems(pages);
+      const text = itemsToText(items);
+      got = { items, text, images: null, label };
+      const rawChars = pages.reduce((sum, ls) => sum + ls.reduce((a, l) => a + l.text.replace(/\s/g, '').length, 0), 0);
+      if (rawChars < 60) {
         let lim = null;
         if (sampleFn && typeof sampleFn.limits === 'function') { try { lim = await sampleFn.limits(); } catch (e) { lim = null; } }
         if (sampleFn && lim && lim.images) {
           setStatus('This PDF looks like scanned pages. Getting them ready for Claude…');
-          images = await pdfPageImages(doc, Math.max(1, Math.min(lim.images.maxCount || 1, 5)));
-          const n = images.length;
-          const which = n === total ? (n === 1 ? 'the page as a picture' : `all ${n} pages as pictures`)
-            : (n === 1 ? 'the first page as a picture' : `the first ${n} pages as pictures`);
+          got.images = await pdfPageImages(doc, Math.max(1, Math.min(lim.images.maxCount || 1, 5)));
+          const k = got.images.length;
+          const which = k === total ? (k === 1 ? 'the page as a picture' : `all ${k} pages as pictures`)
+            : (k === 1 ? 'the first page as a picture' : `the first ${k} pages as pictures`);
           setStatus(`${label} looks like scanned pages, so Claude will read ${which}.`);
-          claudeBtn.hidden = !images.length;
+          claudeBtn.hidden = !k;
         } else {
           setStatus(`${label} has no text to read. It may be scanned pages. Try a PDF where you can select the text.`, true);
         }
       } else if (!sampleFn) {
-        setStatus(`Read ${plural(pages, 'page')} from ${label}.${more}`);
-        toList(text);
+        quickFind(more);
       } else {
-        const covered = pagesCovered(parts, NOTES_MAX);
-        const part = covered < parts.length ? ` Claude reads about the first ${plural(covered, 'page')}, so upload one chapter at a time for long PDFs.` : '';
-        setStatus(`Read ${plural(pages, 'page')} from ${label}.${more}${part}`);
+        const long = text.length > NOTES_MAX ? ' This PDF is long, so Claude reads only the first part. For the best cards, upload one chapter at a time.' : '';
+        setStatus(`Read ${plural(n, 'page')} from ${label}.${more}${long}`);
         claudeBtn.hidden = false;
-        pairsBtn.hidden = false;
+        quickBtn.hidden = false;
       }
     } catch (e) {
+      console.error(e);
       setStatus("Couldn't read that PDF. It may be damaged.", true);
     } finally {
       setBusy(false);
@@ -1860,29 +2240,40 @@ function pdfPanel(onCards, toList) {
     }
   }
   claudeBtn.addEventListener('click', async () => {
-    if (busy || !sampleFn || (!text && !images)) return;
+    if (busy || !sampleFn || !got) return;
     ctl = new AbortController();
+    lastIds = [];
     setBusy(true);
-    setStatus(images ? 'Claude is reading the pages. This can take a minute or two.' : 'Claude is reading your PDF. This can take up to a minute.');
+    setStatus(got.images
+      ? 'Claude is reading the pages. This can take a minute or two.'
+      : 'Claude is reading your PDF and picking out what matters. This can take a minute or two.');
     const opts = { signal: ctl.signal };
-    if (images) opts.images = images;
-    const { added, error } = await streamCards(images ? notesPrompt('', true) : notesPrompt(text), opts, (arr, total) => {
-      onCards(arr);
+    if (got.images) opts.images = got.images;
+    const { added, error } = await streamCards(got.images ? notesPrompt('', true) : notesPrompt(got.text), opts, (arr, total) => {
+      lastIds = lastIds.concat(api.add(arr));
       setStatus(`Added ${plural(total, 'card')} so far…`);
     });
     ctl = null;
     setBusy(false);
     setStatus(claudeResultText(added, error), !!error && error.code !== 'cancelled');
+    undoBtn.hidden = !lastIds.length;
     if (error && SAMPLE_OFF.has(error.code)) claudeBtn.hidden = true;
   });
-  pairsBtn.addEventListener('click', () => { if (text) toList(text); });
+  quickBtn.addEventListener('click', () => { if (!busy && got) quickFind(''); });
   stopBtn.addEventListener('click', () => { if (ctl) ctl.abort(); });
+  undoBtn.addEventListener('click', () => {
+    const n = lastIds.length;
+    api.remove(lastIds);
+    lastIds = [];
+    undoBtn.hidden = true;
+    setStatus(`Removed ${plural(n, 'card')}.`);
+  });
   fileIn.addEventListener('change', () => { const f = fileIn.files && fileIn.files[0]; fileIn.value = ''; read(f); });
   const panel = h('section', { class: 'tool-panel' },
     h('div', null, h('h3', { class: 'h3', text: 'Upload a PDF' }), desc),
     h('div', { class: 'drop' }, pick, h('span', { class: 'muted small', text: 'or drop a PDF here' }), fileIn),
     status,
-    h('div', { class: 'panel-actions' }, claudeBtn, pairsBtn, stopBtn));
+    h('div', { class: 'panel-actions' }, claudeBtn, quickBtn, stopBtn, undoBtn));
   panel.addEventListener('dragover', (e) => { e.preventDefault(); panel.classList.add('dragging'); });
   panel.addEventListener('dragleave', (e) => { if (!panel.contains(e.relatedTarget)) panel.classList.remove('dragging'); });
   panel.addEventListener('drop', (e) => {
@@ -1941,17 +2332,10 @@ VIEWS.edit = function EditView() {
   function drawPanel() {
     let el = null;
     if (view.panel === 'import') el = importEl || (importEl = importPanel(appendCards));
-    else if (view.panel === 'pdf') el = pdfEl || (pdfEl = pdfPanel(appendCards, pdfToList));
-    else if (view.panel === 'notes' && sampleFn) el = notesEl || (notesEl = notesPanel(appendCards));
+    else if (view.panel === 'pdf') el = pdfEl || (pdfEl = pdfPanel(cardApi));
+    else if (view.panel === 'notes' && sampleFn) el = notesEl || (notesEl = notesPanel(cardApi));
     if (el) panelSlot.replaceChildren(el); else panelSlot.replaceChildren();
     if (el && view.focusPanel) { view.focusPanel = false; setTimeout(() => el.focusInput && el.focusInput(), 30); }
-  }
-  function pdfToList(text) {
-    view.panel = 'import';
-    drawTools();
-    drawPanel();
-    if (importEl) importEl.setText(text);
-    toast('The PDF text is in Paste a list. Check the pairs, then add them.');
   }
   function updateCount() {
     const n = d.cards.filter(c => c.t.trim() || c.d.trim()).length;
@@ -1959,11 +2343,20 @@ VIEWS.edit = function EditView() {
   }
   function appendCards(arr) {
     while (d.cards.length && !d.cards[d.cards.length - 1].t.trim() && !d.cards[d.cards.length - 1].d.trim()) d.cards.pop();
-    for (const c of arr) d.cards.push({ id: rid('c'), t: c.t, d: c.d });
+    const ids = [];
+    for (const c of arr) { const id = rid('c'); ids.push(id); d.cards.push({ id, t: c.t, d: c.d }); }
     if (!d.cards.length) d.cards.push(blankCard());
     formErr.textContent = '';
     drawRows();
+    return ids;
   }
+  function removeCards(ids) {
+    const gone = new Set(ids);
+    d.cards = d.cards.filter(c => !gone.has(c.id));
+    if (!d.cards.length) d.cards.push(blankCard());
+    drawRows();
+  }
+  const cardApi = { add: appendCards, remove: removeCards };
   function addCard() {
     d.cards.push(blankCard());
     drawRows(d.cards.length - 1, 't');
